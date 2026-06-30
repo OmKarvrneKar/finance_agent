@@ -20,10 +20,8 @@ import os
 # CORS setup
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
-    os.getenv("FRONTEND_URL", "")
+    os.getenv("FRONTEND_URL", ""),
+    "https://financeagent-sigma.vercel.app",  # your stable production URL, hardcoded as backup
 ]
 
 app.add_middleware(
