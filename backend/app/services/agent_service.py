@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 from openai import OpenAI
 from app.database.db import SessionLocal
 import app.services.agent_tools as agent_tools
+import app.services.forecasting as forecasting
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,9 @@ TOOL_MAP = {
     "compare_periods": agent_tools.compare_periods,
     "find_recurring_transactions": agent_tools.find_recurring_transactions,
     "get_total_spent": agent_tools.get_total_spent,
-    "get_total_income": agent_tools.get_total_income
+    "get_total_income": agent_tools.get_total_income,
+    "forecast_month_end_spend": forecasting.forecast_month_end_spend,
+    "generate_overspend_alerts": forecasting.generate_overspend_alerts
 }
 
 # Define OpenAI-style tool declarations
@@ -162,6 +165,43 @@ TOOLS = [
                     "end_date": {
                         "type": "string",
                         "description": "End date in YYYY-MM-DD format."
+                    }
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "forecast_month_end_spend",
+            "description": "Forecast the total spend for the entire month (overall or for a specific category) based on the daily run rate so far.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "description": "The specific category to forecast (e.g. Food & Dining). Leave empty for overall forecast."
+                    },
+                    "month": {
+                        "type": "string",
+                        "description": "The month to forecast in YYYY-MM format. Defaults to current month."
+                    }
+                },
+                "required": ["month"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_overspend_alerts",
+            "description": "Generate proactive alerts for categories where forecasted spend exceeds the historical average by a threshold.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "month": {
+                        "type": "string",
+                        "description": "The month to check in YYYY-MM format. Defaults to current month."
                     }
                 }
             }

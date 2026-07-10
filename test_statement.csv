@@ -1,7 +1,12 @@
-Date,Narration,Withdrawal Amt.,Deposit Amt.,Closing Balance
-15/06/2026,Swiggy Order,250.00,,50000.00
-16/06/2026,Zomato Delivery,450.00,,49550.00
-17/06/2026,NETFLIX Entertainment,199.00,,49351.00
-18/06/2026,Reliance Retail Groceries,1200.00,,48151.00
-19/06/2026,Salary HDFC Bank,,75000.00,123151.00
-20/06/2026,Zomato Delivery,380.00,,122771.00
+Date,Description,Transaction Type,Amount,Currency
+2026-01-02,Salary,Credit,40000,INR
+2026-01-03,Rent Payment,Debit,31000,INR
+2026-01-04,BigBasket Grocery,Debit,2000,INR
+2026-01-05,Uber,Debit,320,INR
+2026-01-06,Starbucks,Debit,410,INR
+2026-01-07,Subscriptio,Debit,4404,INR
+2026-01-12,Electricity Bill,Debit,100,INR
+2026-01-14,Airtel Recharge,Debit,1602,INR
+2026-01-18,Fuel - Indian Oil,Debit,3000,INR
+2026-01-20,Apollo Pharmacy,Debit,5000,INR
+2026-01-22,Movie Tickets,Debit,1200,INR

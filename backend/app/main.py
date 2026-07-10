@@ -35,6 +35,8 @@ app.add_middleware(
 # Include router
 app.include_router(transactions.router, prefix="/api", tags=["transactions"])
 app.include_router(agent.router, prefix="/api", tags=["agent"])
+from app.routers import forecast
+app.include_router(forecast.router, prefix="/api/forecast", tags=["forecast"])
 
 @app.get("/")
 def read_root():
