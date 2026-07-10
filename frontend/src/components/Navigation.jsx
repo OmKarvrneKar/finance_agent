@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Wallet, Upload, List, MessageSquare, PieChart, Repeat } from 'lucide-react';
+import { Wallet, Upload, List, MessageSquare, PieChart, Repeat, Target } from 'lucide-react';
 import './Navigation.css';
 
 const Navigation = () => {
@@ -31,6 +31,10 @@ const Navigation = () => {
           <NavLink to="/dashboard" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <PieChart size={18} />
             <span>Dashboard</span>
+          </NavLink>
+          <NavLink to="/budgets" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+            <Target size={18} />
+            <span>Budgets</span>
           </NavLink>
         </div>
       </div>

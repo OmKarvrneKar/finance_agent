@@ -1,8 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Upload, FileText, CheckCircle, AlertCircle, Loader, List } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Loader, List, Camera } from 'lucide-react';
 import SummaryCard from '../components/SummaryCard';
+import ReceiptUpload from '../components/ReceiptUpload';
+import PendingReceipts from '../components/PendingReceipts';
 import { uploadStatement } from '../utils/api';
 
 const Home = () => {
@@ -10,6 +12,8 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('statement');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const onDrop = useCallback((acceptedFiles) => {
     if (acceptedFiles.length > 0) {
@@ -63,11 +67,22 @@ const Home = () => {
   return (
     <div className="layout-container">
       <div className="page-header">
-        <h1 className="page-title">Statement Upload</h1>
-        <p className="page-description">Upload your bank statement CSV to automatically categorize your transactions using AI.</p>
+        <h1 className="page-title">Import Transactions</h1>
+        <p className="page-description">Upload your bank statement CSV or scan a receipt to automatically categorize your transactions using AI.</p>
       </div>
 
-      {!result && !loading && (
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
+        <button onClick={() => setActiveTab('statement')} className={activeTab === 'statement' ? 'btn-primary' : 'btn-secondary'} style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Upload size={18} /> Bank Statement
+        </button>
+        <button onClick={() => setActiveTab('receipt')} className={activeTab === 'receipt' ? 'btn-primary' : 'btn-secondary'} style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Camera size={18} /> Receipt / Cash
+        </button>
+      </div>
+
+      {activeTab === 'statement' && (
+        <>
+          {!result && !loading && (
         <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
           <div 
             {...getRootProps()} 
@@ -149,6 +164,15 @@ const Home = () => {
               </ResponsiveContainer>
             </div>
           </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {activeTab === 'receipt' && (
+        <div style={{ maxWidth: '800px' }}>
+          <ReceiptUpload onUploadSuccess={() => setRefreshTrigger(prev => prev + 1)} />
+          <PendingReceipts refreshTrigger={refreshTrigger} onResolved={() => setRefreshTrigger(prev => prev + 1)} />
         </div>
       )}
     </div>

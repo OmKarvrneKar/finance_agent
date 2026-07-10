@@ -36,3 +36,66 @@ class PaginatedTransactionsResponse(BaseModel):
     page: int
     limit: int
     pages: int
+
+class BudgetGoalCreate(BaseModel):
+    category: str
+    monthly_cap: float
+
+class BudgetGoalResponse(BaseModel):
+    id: int
+    category: str
+    monthly_cap: float
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class SavingsGoalCreate(BaseModel):
+    name: str
+    target_amount: float
+    target_date: Optional[date_type] = None
+
+class SavingsGoalResponse(BaseModel):
+    id: int
+    name: str
+    target_amount: float
+    target_date: Optional[date_type] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class BudgetStatusResponse(BaseModel):
+    category: str
+    monthly_cap: float
+    current_spend: float
+    percent_used: float
+    days_left_in_month: int
+    status: str
+    message: str
+
+class SimulateRequest(BaseModel):
+    category: str
+    percent_change: float
+    months: int = 12
+    goal_name: Optional[str] = None
+
+class PendingReceiptResponse(BaseModel):
+    id: int
+    merchant: Optional[str] = None
+    date: Optional[date_type] = None
+    amount: Optional[float] = None
+    category: Optional[str] = None
+    raw_text: Optional[str] = None
+    image_path: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class ReceiptConfirmRequest(BaseModel):
+    merchant: str
+    date: date_type
+    amount: float
+    category: str

@@ -59,3 +59,58 @@ export const getCategoryForecast = async (category, month = '') => {
   const response = await api.get(`/forecast/category/${encodeURIComponent(category)}${params}`);
   return response.data;
 };
+
+export const getBudgets = async (month = '') => {
+  const params = month ? `?month=${month}` : '';
+  const response = await api.get(`/budgets${params}`);
+  return response.data;
+};
+
+export const createUpdateBudget = async (category, monthly_cap) => {
+  const response = await api.post('/budgets', { category, monthly_cap });
+  return response.data;
+};
+
+export const deleteBudget = async (category) => {
+  const response = await api.delete(`/budgets/${encodeURIComponent(category)}`);
+  return response.data;
+};
+
+export const getSavingsGoals = async () => {
+  const response = await api.get('/goals');
+  return response.data;
+};
+
+export const createSavingsGoal = async (goal) => {
+  const response = await api.post('/goals', goal);
+  return response.data;
+};
+
+export const simulateWhatIf = async (simRequest) => {
+  const response = await api.post('/simulate', simRequest);
+  return response.data;
+};
+
+export const uploadReceipt = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/receipts/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return response.data;
+};
+
+export const getPendingReceipts = async () => {
+  const response = await api.get('/receipts/pending-review');
+  return response.data;
+};
+
+export const confirmReceipt = async (id, data, force = false) => {
+  const response = await api.post(`/receipts/${id}/confirm?force=${force}`, data);
+  return response.data;
+};
+
+export const discardReceipt = async (id) => {
+  const response = await api.post(`/receipts/${id}/discard`);
+  return response.data;
+};

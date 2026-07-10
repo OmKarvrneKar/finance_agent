@@ -7,6 +7,7 @@ from openai import OpenAI
 from app.database.db import SessionLocal
 import app.services.agent_tools as agent_tools
 import app.services.forecasting as forecasting
+import app.services.budgets as budgets
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,9 @@ TOOL_MAP = {
     "get_total_spent": agent_tools.get_total_spent,
     "get_total_income": agent_tools.get_total_income,
     "forecast_month_end_spend": forecasting.forecast_month_end_spend,
-    "generate_overspend_alerts": forecasting.generate_overspend_alerts
+    "generate_overspend_alerts": forecasting.generate_overspend_alerts,
+    "get_budget_status": budgets.get_budget_status,
+    "simulate_what_if": budgets.simulate_what_if
 }
 
 # Define OpenAI-style tool declarations
@@ -204,6 +207,51 @@ TOOLS = [
                         "description": "The month to check in YYYY-MM format. Defaults to current month."
                     }
                 }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_budget_status",
+            "description": "Get the status of all budget goals, showing how much has been spent versus the cap and pacing.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "month": {
+                        "type": "string",
+                        "description": "The month to check in YYYY-MM format. Defaults to current month."
+                    }
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "simulate_what_if",
+            "description": "Simulate a hypothetical scenario of changing spending behavior to see long-term impact on savings.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "description": "The specific category to simulate changes for (e.g. Food)."
+                    },
+                    "percent_change": {
+                        "type": "number",
+                        "description": "Percentage change in spending. Negative to cut spending (e.g. -20 for a 20% cut), positive for increasing."
+                    },
+                    "months": {
+                        "type": "integer",
+                        "description": "Number of months to simulate over. Default 12."
+                    },
+                    "goal_name": {
+                        "type": "string",
+                        "description": "Optional name of a savings goal to see how fast it would be reached."
+                    }
+                },
+                "required": ["category", "percent_change"]
             }
         }
     }

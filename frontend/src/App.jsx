@@ -6,6 +6,7 @@ import Transactions from './pages/Transactions';
 import AskAI from './pages/AskAI';
 import Dashboard from './pages/Dashboard';
 import Subscriptions from './pages/Subscriptions';
+import BudgetsPage from './pages/BudgetsPage';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="/ask" element={<AskAI />} />
             <Route path="/subscriptions" element={<Subscriptions />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/budgets" element={<BudgetsPage />} />
           </Routes>
         </main>
       </div>
