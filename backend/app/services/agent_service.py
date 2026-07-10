@@ -8,6 +8,7 @@ from app.database.db import SessionLocal
 import app.services.agent_tools as agent_tools
 import app.services.forecasting as forecasting
 import app.services.budgets as budgets
+import app.services.anomalies as anomalies
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,8 @@ TOOL_MAP = {
     "forecast_month_end_spend": forecasting.forecast_month_end_spend,
     "generate_overspend_alerts": forecasting.generate_overspend_alerts,
     "get_budget_status": budgets.get_budget_status,
-    "simulate_what_if": budgets.simulate_what_if
+    "simulate_what_if": budgets.simulate_what_if,
+    "generate_anomaly_report": anomalies.generate_anomaly_report
 }
 
 # Define OpenAI-style tool declarations
@@ -252,6 +254,17 @@ TOOLS = [
                     }
                 },
                 "required": ["category", "percent_change"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_anomaly_report",
+            "description": "Detects unusual spending activity such as recurring bill price jumps, duplicate charges, or unfamiliar large expenses.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
             }
         }
     }

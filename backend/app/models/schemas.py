@@ -99,3 +99,20 @@ class ReceiptConfirmRequest(BaseModel):
     date: date_type
     amount: float
     category: str
+
+class AnomalyResponse(BaseModel):
+    id: str
+    type: str
+    severity: str
+    transaction_ids: List[int]
+    message: str
+    date: Optional[str] = None
+    merchant: str
+    amount: Optional[float] = None
+    previous_amount: Optional[float] = None
+    new_amount: Optional[float] = None
+    percent_increase: Optional[float] = None
+    dates: Optional[List[str]] = None
+    gap_hours: Optional[int] = None
+    user_avg_amount: Optional[float] = None
+    user_std_dev: Optional[float] = None

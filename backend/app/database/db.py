@@ -59,6 +59,13 @@ class PendingReceipt(Base):
     image_path = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+class AnomalyReview(Base):
+    __tablename__ = "anomaly_reviews"
+    id = Column(Integer, primary_key=True, index=True)
+    anomaly_signature = Column(String, unique=True, index=True, nullable=False)
+    status = Column(String, nullable=False) # "dismissed" | "confirmed_issue"
+    reviewed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
 def get_db():
     db = SessionLocal()
     try:

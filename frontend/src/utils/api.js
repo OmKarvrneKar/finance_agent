@@ -114,3 +114,18 @@ export const discardReceipt = async (id) => {
   const response = await api.post(`/receipts/${id}/discard`);
   return response.data;
 };
+
+export const getAnomalies = async () => {
+  const response = await api.get('/anomalies');
+  return response.data;
+};
+
+export const dismissAnomaly = async (id) => {
+  const response = await api.post(`/anomalies/${id}/dismiss`);
+  return response.data;
+};
+
+export const confirmAnomaly = async (id) => {
+  const response = await api.post(`/anomalies/${id}/confirm`);
+  return response.data;
+};
