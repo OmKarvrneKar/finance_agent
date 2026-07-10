@@ -41,3 +41,21 @@ export const getAllTransactions = async () => {
   const response = await api.get('/transactions?limit=10000');
   return response.data;
 };
+
+export const getForecastSummary = async (month = '') => {
+  const params = month ? `?month=${month}` : '';
+  const response = await api.get(`/forecast/summary${params}`);
+  return response.data;
+};
+
+export const getForecastAlerts = async (month = '') => {
+  const params = month ? `?month=${month}` : '';
+  const response = await api.get(`/forecast/alerts${params}`);
+  return response.data;
+};
+
+export const getCategoryForecast = async (category, month = '') => {
+  const params = month ? `?month=${month}` : '';
+  const response = await api.get(`/forecast/category/${encodeURIComponent(category)}${params}`);
+  return response.data;
+};

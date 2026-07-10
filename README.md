@@ -7,6 +7,7 @@ A full-stack AI-powered personal finance assistant that allows you to upload ban
 - **Automated Categorization**: Upload bank CSV statements and have them automatically parsed and categorized by AI.
 - **Natural Language Agent**: Ask questions about your spending ("How much did I spend on food this month?") and the AI will query the database to provide answers and insights.
 - **Subscriptions Detection**: Automatically identifies recurring expenses, determines their frequency, and estimates monthly/annual costs.
+- **Predictive Cash-Flow & Alerts**: Forecasts your end-of-month spending using a simple linear run-rate extrapolation based on your current month's transactions. It compares this projection against your 3-month historical average to proactively warn you of potential overspending. *(Note: This uses straightforward mathematical extrapolation, not heavy machine learning. It assumes consistent spending patterns and does not account for known upcoming one-off expenses).*
 - **Dashboard & Analytics**: Visualize your spending with bar and pie charts.
 - **Full-Stack Architecture**: Built with Vite + React on the frontend and FastAPI + SQLite on the backend.
 

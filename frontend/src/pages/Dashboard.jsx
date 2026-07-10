@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { getAllTransactions } from '../utils/api';
 import SummaryCard from '../components/SummaryCard';
+import ForecastAlerts from '../components/ForecastAlerts';
 import { List, ArrowDownCircle, ArrowUpCircle, Wallet } from 'lucide-react';
 
 const COLORS = ['#3B82F6', '#059669', '#D97706', '#DC2626', '#7C3AED', '#0284C7', '#C026D3', '#0D9488', '#E11D48'];
@@ -108,10 +109,13 @@ const Dashboard = () => {
 
   return (
     <div className="layout-container">
+
       <div className="page-header">
         <h1 className="page-title">Financial Dashboard</h1>
         <p className="page-description">Overview of your spending habits and financial health.</p>
       </div>
+
+      <ForecastAlerts />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '32px' }}>
         <SummaryCard title="Total Spent" value={data.totalSpent} icon={ArrowDownCircle} isCurrency={true} />
