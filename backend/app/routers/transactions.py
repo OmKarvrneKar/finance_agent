@@ -83,7 +83,7 @@ async def upload_statement(file: UploadFile = File(...), db: Session = Depends(g
         
     # 3. Save to database
     try:
-        db_txs = crud.create_transactions(db, categorized_transactions)
+        db_txs, duplicates = crud.create_transactions(db, categorized_transactions)
     except Exception as e:
         logger.error(f"Database insertion error: {str(e)}")
         raise HTTPException(
@@ -103,13 +103,16 @@ async def upload_statement(file: UploadFile = File(...), db: Session = Depends(g
     return {
         "total_transactions": total_tx,
         "total_spent": round(total_spent, 2),
-        "category_breakdown": category_counts
+        "category_breakdown": category_counts,
+        "new_transactions": total_tx,
+        "duplicate_transactions": duplicates,
+        "total_in_file": len(categorized_transactions)
     }
 
 @router.get("/transactions", response_model=PaginatedTransactionsResponse)
 def get_transactions(
     page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Transactions per page"),
+    limit: int = Query(20, ge=1, le=10000, description="Transactions per page"),
     category: str = Query(None, description="Filter by category"),
     transaction_type: str = Query(None, description="Filter by transaction type"),
     db: Session = Depends(get_db)
