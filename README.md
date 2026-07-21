@@ -81,3 +81,5 @@ The frontend will start on `http://localhost:5173/`.
 1. Create a new project and select the Vite framework.
 2. Set root directory to `frontend`.
 3. Add environment variable `VITE_API_URL` pointing to your deployed backend (e.g., `https://your-render-url.onrender.com/api`).
+
+   
