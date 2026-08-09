@@ -4,5 +4,6 @@ python-multipart
 pandas
 google-generativeai
 python-dotenv
-sqlalchemy
 openai
+sqlalchemy
+
