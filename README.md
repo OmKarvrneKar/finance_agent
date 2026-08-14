@@ -86,6 +86,3 @@ The frontend will start on `http://localhost:5173/`..
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
