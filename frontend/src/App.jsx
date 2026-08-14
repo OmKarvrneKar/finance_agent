@@ -23,6 +23,9 @@ function App() {
             <Route path="/budgets" element={<BudgetsPage />} />
           </Routes>
         </main>
+        <footer style={{ textAlign: 'center', padding: '1rem', marginTop: 'auto', opacity: 0.7 }}>
+          <p>&copy; {new Date().getFullYear()} AI Finance Agent. All rights reserved.</p>
+        </footer>
       </div>
     </Router>
   );
