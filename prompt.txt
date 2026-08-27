@@ -1,69 +1,64 @@
-Finish Phase 3E by building the frontend Split Transaction UI.
+Start Phase 3F — Recurring Bill Calendar.
 
-Use the existing split APIs.
+FIRST STEP ONLY: build the deterministic backend/API for an upcoming recurring-bills calendar.
+
+Do NOT build the frontend yet.
+Do NOT use Gemini.
 
 Requirements:
 
-* Allow the user to open a transaction and view its splits.
-* Show:
+* Use the existing recurring transaction/subscription detection data.
+* Return upcoming recurring bills for the authenticated user.
+* Include:
 
-  * original transaction amount
-  * split rows
-  * category
-  * amount
-  * optional description
-  * remaining amount
-  * split total
-* Allow adding, editing, and deleting splits.
-* Prevent saving when split total does not exactly equal the transaction amount.
-* Show clear validation for:
-
-  * zero/negative amounts
-  * duplicate categories
-  * empty category
-  * under/over allocation
-* Use Decimal-safe string handling; do not use floating-point arithmetic for money.
-* Do NOT modify the original transaction amount.
-
-UX:
-
-* Reuse existing category selector/components where possible.
-* Show "Unsplit" when no splits exist.
-* Show a clear "Split transaction" action.
-* Show useful success/error feedback.
-* Responsive UI.
-* Keep styling consistent with the existing application.
+  * merchant/description
+  * expected amount
+  * expected date
+  * recurrence frequency if available
+  * category if available
+  * confidence/status if existing recurring detection provides it
+* Support a date range:
+  GET /api/recurring/calendar?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+* Default to a reasonable upcoming window if dates are omitted.
+* Only return the authenticated user's recurring data.
+* Do not create duplicate recurring records.
+* Do not modify the existing recurring detection algorithm in this step.
+* Do not invent due dates when the existing data cannot support one. Clearly represent uncertain/missing dates.
+* Use Decimal for money.
+* Keep transaction amounts authoritative.
 
 Tests:
 
-* render unsplit transaction
-* render existing splits
-* add split
-* edit split
-* delete split
-* validation for under/over allocation
-* duplicate category validation
-* zero/negative validation
-* remaining amount
-* API error handling
-* successful save
-* authenticated API calls
+* authentication
+* user isolation
+* date-range filtering
+* upcoming recurring bills
+* amount accuracy
+* frequency
+* category
+* empty result
+* invalid date range
+* no fabricated dates
+* duplicate prevention
+* Decimal precision
 
 IMPORTANT:
 
-* Do not change backend split APIs.
-* Do not change analytics.
-* Do not modify transaction amounts.
-* Do not add Gemini.
-* Do not add unrelated features.
+* Reuse existing recurring/subscription services where possible.
+* Do NOT modify split transactions.
+* Do NOT modify merchant analytics.
+* Do NOT add notifications yet.
+* Do NOT build frontend UI.
 
 Run the full backend + frontend test suites.
 
 STOP and report:
 
 1. files changed
-2. UI integration
-3. validation behavior
-4. tests added
-5. backend/frontend/total tests
-6. limitations
+2. endpoint
+3. data source
+4. date/due-date methodology
+5. security/user isolation
+6. tests added
+7. backend/frontend/total tests
+8. limitations

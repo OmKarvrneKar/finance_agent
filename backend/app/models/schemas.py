@@ -367,3 +367,25 @@ class TransactionWithSplitsResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Recurring Bill Calendar schemas
+
+class RecurringCalendarBill(BaseModel):
+    description: str
+    category: Optional[str] = None
+    expected_amount: Decimal
+    expected_date: Optional[str] = None
+    date_status: str  # projected | uncertain | missing
+    frequency: str
+    is_user_confirmed: bool = False
+    occurrences: int
+    last_seen: str
+
+
+class RecurringCalendarResponse(BaseModel):
+    bills: List[RecurringCalendarBill]
+    start_date: str
+    end_date: str
+    total_expected_amount: Decimal
+    count: int
