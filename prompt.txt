@@ -1,61 +1,53 @@
-Implement ONLY the next production-hardening batch from the Phase 2F audit.
+Implement ONLY Phase 2J: Authentication Hardening.
 
-Fix:
+Fix the authentication issues identified in the final audit.
 
-1. Environment validation
+1. Backend logout
 
-* Validate all required production environment variables at startup.
-* Do not expose secret values in errors/logs.
-* Keep development behavior usable.
+* Add POST /api/auth/logout.
+* Implement server-side JWT revocation/blacklisting.
+* Revoked tokens must be rejected by get_current_user.
+* Make revocation user/token specific.
+* Add appropriate database model + Alembic migration if required.
 
-2. Docker hardening
+2. JWT lifecycle
 
-* Run backend as a non-root user.
-* Install required Tesseract dependency if receipt OCR still depends on it.
-* Do not copy .env, database files, uploads, or other local secrets into the image.
-* Add appropriate healthcheck configuration if practical.
+* Keep the existing access-token behavior working.
+* Add token identification (jti) so individual tokens can be revoked.
+* Do not silently extend token lifetime.
+* Do not implement refresh tokens yet.
 
-3. Database configuration
+3. Frontend
 
-* Make database URL environment-configurable.
-* Make Alembic use the configured database URL.
-* Remove production reliance on create_all().
-* Keep Alembic as the schema migration mechanism.
+* Update logout to call the backend logout endpoint before clearing local auth state.
+* Handle logout API failure safely by still clearing local client state.
 
-4. Upload/storage configuration
+4. Tests
 
-* Make upload/storage paths environment-configurable.
-* Preserve current behavior by default.
-* Ensure uploaded files remain outside the application source tree where practical.
-
-5. Password validation
-
-* Add a reasonable password-strength policy to registration.
-* Update frontend validation to match backend requirements.
-
-Tests:
-
-* startup environment validation
-* password validation
-* Docker/config behavior where testable
-* Alembic database URL configuration
-* upload path configuration
-* regression tests
+* logout endpoint
+* valid token works before logout
+* same token rejected after logout
+* revoked token cannot access protected endpoints
+* another user's token is unaffected
+* expired token behavior
+* logout when already logged out
+* frontend logout behavior
+* migration upgrade/downgrade
 
 IMPORTANT:
 
-* Do not change authentication architecture.
-* Do not migrate to PostgreSQL yet.
-* Do not implement new product features.
-* Do not change existing rate limits/security headers unless required for these fixes.
+* Do NOT migrate JWT storage to cookies yet.
+* Do NOT implement refresh tokens yet.
+* Do NOT change unrelated features.
+* Preserve existing authentication behavior.
+* Never store raw JWTs in the database; store a secure token identifier/hash as appropriate.
+* Run the full backend + frontend test suites.
 
-Run full backend + frontend tests.
-
-STOP after this batch and report:
+STOP after Phase 2J and report:
 
 * files changed
-* Docker changes
-* environment variables added/changed
-* migration/configuration changes
+* migration details
+* logout/revocation design
 * tests added
-* backend/frontend/total test results
+* backend/frontend/total tests
+* any security limitations remaining

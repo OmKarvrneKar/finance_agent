@@ -38,15 +38,15 @@ def client(db_session):
 
 @pytest.fixture()
 def user1_token(client):
-    client.post("/api/auth/register", json={"email": "u1@test.com", "password": "password123", "full_name": "User 1"})
-    resp = client.post("/api/auth/login", data={"username": "u1@test.com", "password": "password123"})
+    client.post("/api/auth/register", json={"email": "u1@test.com", "password": "Password123", "full_name": "User 1"})
+    resp = client.post("/api/auth/login", data={"username": "u1@test.com", "password": "Password123"})
     return resp.json()["access_token"]
 
 
 @pytest.fixture()
 def user2_token(client):
-    client.post("/api/auth/register", json={"email": "u2@test.com", "password": "password123", "full_name": "User 2"})
-    resp = client.post("/api/auth/login", data={"username": "u2@test.com", "password": "password123"})
+    client.post("/api/auth/register", json={"email": "u2@test.com", "password": "Password123", "full_name": "User 2"})
+    resp = client.post("/api/auth/login", data={"username": "u2@test.com", "password": "Password123"})
     return resp.json()["access_token"]
 
 

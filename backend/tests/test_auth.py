@@ -36,7 +36,7 @@ def setup_db():
 client = TestClient(app)
 
 TEST_EMAIL = "test@example.com"
-TEST_PASSWORD = "securepassword123"
+TEST_PASSWORD = "SecurePass123"
 TEST_NAME = "Test User"
 
 
@@ -93,9 +93,8 @@ def test_register_short_password():
         "email": "new@example.com",
         "password": "ab",
     })
-    # Password validation is minimal (just required), so this may pass
-    # The important thing is it doesn't crash
-    assert response.status_code in [201, 422]
+    # Password validation now enforces minimum 8 chars + complexity
+    assert response.status_code == 422
 
 
 def test_register_without_name():

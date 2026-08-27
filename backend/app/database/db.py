@@ -85,6 +85,13 @@ class AnomalyReview(Base):
     status = Column(String, nullable=False)  # "dismissed" | "confirmed_issue"
     reviewed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+class RevokedToken(Base):
+    __tablename__ = "revoked_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    jti = Column(String, unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    revoked_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
 def get_db():
     db = SessionLocal()
     try:

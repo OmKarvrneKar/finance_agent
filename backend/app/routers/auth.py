@@ -1,12 +1,18 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.database.db import get_db, User
 from app.models.schemas import UserCreate, UserResponse, TokenResponse
-from app.auth import hash_password, verify_password, create_access_token, get_current_user
+from app.auth import (
+    hash_password, verify_password, create_access_token, get_current_user,
+    revoke_token, decode_access_token, JWT_SECRET_KEY, JWT_ALGORITHM,
+    oauth2_scheme,
+)
 from app.dependencies import auth_rate_limit, register_rate_limit
+from app.database.db import RevokedToken
 
 logger = logging.getLogger(__name__)
 
@@ -62,3 +68,19 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 @router.get("/auth/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/auth/logout", status_code=status.HTTP_200_OK)
+def logout(
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        jti = payload.get("jti")
+        if jti:
+            revoke_token(jti, current_user.id, db)
+    except JWTError:
+        pass
+    return {"detail": "Successfully logged out"}

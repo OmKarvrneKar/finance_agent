@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { logoutUser } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -19,7 +20,12 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await logoutUser();
+    } catch {
+      // Backend logout failed — still clear local state
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);

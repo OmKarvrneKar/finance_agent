@@ -83,7 +83,7 @@ describe('Register page', () => {
     render(wrap(<Register />));
     fireEvent.change(screen.getByPlaceholderText('John Doe'), { target: { value: 'Test User' } });
     fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 'new@test.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Min 8 characters'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByPlaceholderText('Min 8 characters'), { target: { value: 'Password123' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
     await waitFor(() => {
       expect(screen.getByText('Account created! Redirecting to login...')).toBeInTheDocument();
@@ -95,7 +95,7 @@ describe('Register page', () => {
     render(wrap(<Register />));
     fireEvent.change(screen.getByPlaceholderText('John Doe'), { target: { value: 'Test' } });
     fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 'dup@test.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Min 8 characters'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByPlaceholderText('Min 8 characters'), { target: { value: 'Password123' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
     await waitFor(() => {
       expect(screen.getByText('Email already exists')).toBeInTheDocument();

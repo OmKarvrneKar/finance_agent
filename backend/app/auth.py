@@ -1,5 +1,6 @@
 import os
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -10,7 +11,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.config import Config
-from app.database.db import get_db, User
+from app.database.db import get_db, User, RevokedToken
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode = data.copy()
     if "sub" in to_encode:
         to_encode["sub"] = str(to_encode["sub"])
+    to_encode["jti"] = uuid.uuid4().hex
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=JWT_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
@@ -54,6 +56,17 @@ def decode_access_token(token: str) -> dict:
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+def is_token_revoked(jti: str, db: Session) -> bool:
+    return db.query(RevokedToken).filter(RevokedToken.jti == jti).first() is not None
+
+
+def revoke_token(jti: str, user_id: int, db: Session) -> None:
+    if not is_token_revoked(jti, db):
+        revoked = RevokedToken(jti=jti, user_id=user_id)
+        db.add(revoked)
+        db.commit()
 
 
 def get_current_user(
@@ -74,6 +87,13 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    jti = payload.get("jti")
+    if jti and is_token_revoked(jti, db):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
             headers={"WWW-Authenticate": "Bearer"},
         )
     user = db.query(User).filter(User.id == user_id).first()
