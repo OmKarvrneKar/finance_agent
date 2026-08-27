@@ -1,64 +1,69 @@
-Start Phase 3F — Recurring Bill Calendar.
+Finish Phase 3F by building the frontend Recurring Bills Calendar.
 
-FIRST STEP ONLY: build the deterministic backend/API for an upcoming recurring-bills calendar.
-
-Do NOT build the frontend yet.
-Do NOT use Gemini.
+Use the existing:
+GET /api/recurring/calendar
 
 Requirements:
 
-* Use the existing recurring transaction/subscription detection data.
-* Return upcoming recurring bills for the authenticated user.
-* Include:
+* Add a "Recurring Bills" section/page to the existing dashboard.
+* Display upcoming recurring bills in a calendar-style view.
+* Also provide a list view because some bills may have uncertain dates.
+* Show:
 
   * merchant/description
   * expected amount
   * expected date
-  * recurrence frequency if available
-  * category if available
-  * confidence/status if existing recurring detection provides it
-* Support a date range:
-  GET /api/recurring/calendar?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
-* Default to a reasonable upcoming window if dates are omitted.
-* Only return the authenticated user's recurring data.
-* Do not create duplicate recurring records.
-* Do not modify the existing recurring detection algorithm in this step.
-* Do not invent due dates when the existing data cannot support one. Clearly represent uncertain/missing dates.
-* Use Decimal for money.
-* Keep transaction amounts authoritative.
+  * frequency
+  * category
+  * projected/uncertain/missing date status
+  * user-confirmed status when available
+* Show total expected amount for the selected period.
+* Allow changing the displayed date range.
+* Clearly distinguish projected dates from uncertain/missing dates.
+* Do NOT invent dates on the frontend.
+
+UX:
+
+* Loading state
+* Empty state
+* API error state
+* No-date/uncertain state
+* Responsive layout
+* Reuse existing dashboard styling/components.
+* Use existing date utilities if available.
 
 Tests:
 
-* authentication
-* user isolation
-* date-range filtering
-* upcoming recurring bills
-* amount accuracy
-* frequency
-* category
-* empty result
-* invalid date range
-* no fabricated dates
-* duplicate prevention
-* Decimal precision
+* calendar renders
+* recurring bill renders
+* expected amount displays
+* projected date displays
+* uncertain date displays correctly
+* missing date displays correctly
+* date-range changes trigger correct API request
+* total expected amount displays
+* empty state
+* loading state
+* API error state
+* authenticated request
 
 IMPORTANT:
 
-* Reuse existing recurring/subscription services where possible.
+* Do NOT modify the backend recurring-calendar algorithm.
+* Do NOT add notifications/reminders.
+* Do NOT add Gemini.
+* Do NOT modify recurring detection.
 * Do NOT modify split transactions.
-* Do NOT modify merchant analytics.
-* Do NOT add notifications yet.
-* Do NOT build frontend UI.
+* Do NOT add unrelated features.
 
 Run the full backend + frontend test suites.
 
 STOP and report:
 
 1. files changed
-2. endpoint
-3. data source
-4. date/due-date methodology
-5. security/user isolation
-6. tests added
-7. backend/frontend/total tests
-8. limitations
+2. UI integration
+3. calendar/list behavior
+4. date-status handling
+5. tests added
+6. backend/frontend/total tests
+7. limitations
