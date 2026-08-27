@@ -1,76 +1,62 @@
-Start Phase 3B — Merchant-Level Analytics.
+Start Phase 3D — PDF Financial Report.
 
-FIRST STEP ONLY: build the deterministic backend analytics. Do NOT integrate Gemini and do NOT build the frontend yet.
+FIRST STEP ONLY: implement the backend monthly financial report PDF. Do NOT build the frontend yet.
+
+Add an authenticated endpoint such as:
+
+GET /api/reports/monthly?year=YYYY&month=MM
 
 Requirements:
 
-Create user-scoped merchant analytics that can answer:
-
-* total spending by merchant
-* transaction count by merchant
-* average transaction amount
-* largest transaction
-* spending percentage of total expenses
-* date-range filtering
-* top merchants ordered by spending
-* search/filter by merchant name
-
-Add:
-
-* backend service/module
-* authenticated API endpoint
-* Pydantic response models
-* Decimal-safe monetary calculations
-* strict user isolation
-
-Example:
-GET /api/analytics/merchants?start_date=...&end_date=...&limit=10&search=starbucks
-
-The endpoint should return enough data to support:
-"How much did I spend at Starbucks?"
-and
-"Where do I spend the most?"
-
-Validation:
-
-* valid date ranges
-* reasonable limit bounds
-* empty results
-* unknown merchant
-* duplicate merchant descriptions should be handled consistently
-* credit/income transactions must not incorrectly appear as spending
-* user isolation
+* Generate a downloadable PDF for ONLY the authenticated user's data.
+* Use the existing financial calculation services where possible.
+* Include:
+  * report period
+  * total income
+  * total expenses
+  * net cash flow
+  * category spending breakdown
+  * top merchants
+  * recurring expenses/subscriptions
+  * budget status if budget data exists
+  * savings-goal progress if available
+* Monetary values must come from deterministic backend calculations.
+* Use Decimal for financial calculations.
+* Do NOT ask Gemini to calculate financial numbers.
+* PDF should be readable and professionally structured.
+* Handle months with no transactions gracefully.
+* Validate year/month.
+* Prevent access to another user's data.
 
 Tests:
 
-* merchant aggregation
-* total/count/average/largest calculation
-* date filtering
-* search filtering
-* ordering
-* limit
-* empty results
-* Decimal precision
-* income/credit exclusion from spending analytics
+* authentication
 * user isolation
-* unauthenticated access
+* valid month
+* invalid month/year
+* empty month
+* income/expense totals
+* category totals
+* merchant totals
+* PDF response/content type
+* Content-Disposition filename
+* no cross-user data leakage
 
 IMPORTANT:
 
-* Do NOT use Gemini yet.
-* Do NOT modify the existing savings recommendation feature.
-* Do NOT modify authentication.
 * Do NOT build frontend UI yet.
-* Do NOT add unrelated analytics.
-
-Run the full backend test suite.
+* Do NOT add Gemini.
+* Do NOT modify existing transaction/export logic.
+* Reuse existing analytics/calculation code instead of duplicating formulas.
+* Run full backend + frontend tests.
 
 STOP after this step and report:
 
 1. files changed
 2. endpoint
-3. merchant aggregation methodology
-4. filtering rules
-5. tests added
-6. backend/frontend/total tests
-7. limitations
+3. PDF contents
+4. data/calculation sources
+5. security/user isolation
+6. tests added
+7. backend/frontend/total tests
+8. limitations
