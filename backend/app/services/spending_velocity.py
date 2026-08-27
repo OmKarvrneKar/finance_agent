@@ -99,11 +99,13 @@ def get_spending_velocity(
 
     current_spend = _sum_debits(db, user_id, start_date, end_date)
 
+    # History coverage starts at the earliest transaction of any type (debit or
+# credit). Spending totals still use debits only — zero-spend periods with
+# only income still form valid baseline windows.
     earliest = (
         db.query(func.min(Transaction.date))
         .filter(
             Transaction.user_id == user_id,
-            Transaction.transaction_type == "debit",
             Transaction.date <= end_date,
         )
         .scalar()
