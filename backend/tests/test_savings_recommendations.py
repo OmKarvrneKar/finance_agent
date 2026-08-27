@@ -261,6 +261,7 @@ def test_user_isolation(client, auth_headers, second_auth_headers):
     for i in range(4):
         d = _calc_month_offset(today, i)
         _add_tx(1, "Rent", "2000", "housing", tx_date=d)
+        _add_tx(1, "Groceries", "200", "food", tx_date=d)
 
     for i in range(4):
         d = _calc_month_offset(today, i)

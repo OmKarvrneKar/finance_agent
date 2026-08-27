@@ -125,7 +125,7 @@ def _recommend_high_spending_categories(
         avg = total / Decimal(str(len(amounts)))
         category_avgs[cat] = avg.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-    if not category_avgs:
+    if not category_avgs or len(category_avgs) < 2:
         return []
 
     overall_avg = sum(category_avgs.values()) / Decimal(str(len(category_avgs)))
