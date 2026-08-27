@@ -1,69 +1,78 @@
-Finish Phase 3F by building the frontend Recurring Bills Calendar.
+Start Phase 3G — Spending Velocity Detection.
 
-Use the existing:
-GET /api/recurring/calendar
+FIRST STEP ONLY: build the deterministic backend/API. Do NOT build frontend yet. Do NOT use Gemini.
 
-Requirements:
+Goal:
+Detect when the user's recent spending pace is unusually high compared with their historical spending pace.
 
-* Add a "Recurring Bills" section/page to the existing dashboard.
-* Display upcoming recurring bills in a calendar-style view.
-* Also provide a list view because some bills may have uncertain dates.
-* Show:
+Add an authenticated endpoint such as:
 
-  * merchant/description
-  * expected amount
-  * expected date
-  * frequency
-  * category
-  * projected/uncertain/missing date status
-  * user-confirmed status when available
-* Show total expected amount for the selected period.
-* Allow changing the displayed date range.
-* Clearly distinguish projected dates from uncertain/missing dates.
-* Do NOT invent dates on the frontend.
+GET /api/analytics/spending-velocity?window_days=3
 
-UX:
+Return:
 
-* Loading state
-* Empty state
-* API error state
-* No-date/uncertain state
-* Responsive layout
-* Reuse existing dashboard styling/components.
-* Use existing date utilities if available.
+* current_window_spend
+* baseline_window_spend
+* velocity_ratio
+* percentage_change
+* window_days
+* baseline_method
+* alert_level
+* start_date
+* end_date
+
+Rules:
+
+* Analyze expense/debit transactions only.
+* Never count income/credits as spending.
+* Use Decimal for monetary calculations.
+* User isolation via authenticated user.
+* Current window = most recent N days.
+* Build a deterministic historical baseline from comparable historical periods.
+* Clearly document the baseline methodology.
+* Require sufficient historical data before producing a strong alert.
+* Do not generate an alert solely because the user spent a large absolute amount.
+* The alert should be based on spending pace relative to the user's own history.
+
+Avoid:
+
+* Gemini
+* arbitrary hardcoded "3x = bad" logic without documenting it
+* future-date transactions
+* double counting split transactions
+* changing existing transaction data
+
+For split transactions:
+
+* total spending must remain the original transaction amount.
+* Do not count split rows as separate expenses.
 
 Tests:
 
-* calendar renders
-* recurring bill renders
-* expected amount displays
-* projected date displays
-* uncertain date displays correctly
-* missing date displays correctly
-* date-range changes trigger correct API request
-* total expected amount displays
-* empty state
-* loading state
-* API error state
-* authenticated request
+* normal spending
+* elevated spending
+* very high spending
+* insufficient history
+* zero historical baseline
+* income/credit exclusion
+* date boundaries
+* Decimal precision
+* split transaction no-double-counting
+* user isolation
+* authentication
+* invalid window_days
+* future transactions excluded
 
-IMPORTANT:
-
-* Do NOT modify the backend recurring-calendar algorithm.
-* Do NOT add notifications/reminders.
-* Do NOT add Gemini.
-* Do NOT modify recurring detection.
-* Do NOT modify split transactions.
-* Do NOT add unrelated features.
-
-Run the full backend + frontend test suites.
+Run full backend + frontend test suites.
 
 STOP and report:
 
 1. files changed
-2. UI integration
-3. calendar/list behavior
-4. date-status handling
-5. tests added
-6. backend/frontend/total tests
-7. limitations
+2. endpoint
+3. baseline methodology
+4. velocity calculation
+5. alert thresholds
+6. split handling
+7. tests added
+8. backend/frontend/total tests
+9. limitations

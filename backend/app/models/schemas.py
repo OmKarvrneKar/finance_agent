@@ -389,3 +389,19 @@ class RecurringCalendarResponse(BaseModel):
     end_date: str
     total_expected_amount: Decimal
     count: int
+
+
+# Spending Velocity schemas
+
+class SpendingVelocityResponse(BaseModel):
+    current_window_spend: Decimal
+    baseline_window_spend: Decimal
+    velocity_ratio: Optional[float] = None
+    percentage_change: Optional[float] = None
+    window_days: int
+    baseline_method: str
+    alert_level: str
+    start_date: str
+    end_date: str
+    baseline_windows_used: int = 0
+    history_start_date: Optional[str] = None
