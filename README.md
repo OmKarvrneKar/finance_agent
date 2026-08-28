@@ -68,14 +68,15 @@ npm install
 npm run dev
 ```
 
-The frontend will start on `http://localhost:5173/`..
+The frontend will start on `http://localhost:5173/`
 
 ## Deployment
 
+
 ### Backend (Render)
 1. Create a new Web Service using Docker.
-2. Set root directory to `backend`.
-3. Add environment variables `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, and `FRONTEND_URL`.
+2. Set root directory to `backend`
+3. Add environment variables `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, and `FRONTEND_URL`
 
 ### Frontend (Vercel)
 1. Create a new project and select the Vite framework.
