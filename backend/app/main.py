@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.database.db import engine, Base
-from app.routers import transactions, agent, auth, goals
+from app.routers import transactions, agent, auth, goals, savings_recommendations
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +88,7 @@ app.include_router(anomalies.router, prefix="/api", tags=["anomalies"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(goals.router, prefix="/api", tags=["goals"])
 app.include_router(health.router, prefix="/api", tags=["health"])
+app.include_router(savings_recommendations.router, prefix="/api", tags=["savings-recommendations"])
 
 @app.get("/")
 def read_root():

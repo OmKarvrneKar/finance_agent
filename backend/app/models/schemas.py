@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, field_validator
 from datetime import date as date_type, datetime
 from decimal import Decimal
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import re
 
 # Auth schemas
@@ -218,3 +218,53 @@ class SubscriptionResponse(BaseModel):
     estimated_annual_cost: Decimal
     last_seen: str
     is_user_confirmed: bool = False
+
+
+# Savings Recommendation schemas
+
+class SavingsRecommendationBase(BaseModel):
+    type: str
+    title: str
+    description: str
+    estimated_monthly_savings: Decimal
+    estimated_annual_savings: Decimal
+    confidence: str
+    supporting_data: Dict[str, Any]
+
+
+class HighSpendingCategoryRecommendation(SavingsRecommendationBase):
+    type: str = "high_spending_category"
+    category: str
+    current_monthly_avg: Decimal
+    peer_monthly_avg: Optional[Decimal] = None
+    months_analyzed: int
+
+
+class HighFrequencyMerchantRecommendation(SavingsRecommendationBase):
+    type: str = "high_frequency_merchant"
+    merchant: str
+    category: str
+    visit_count: int
+    monthly_frequency: Decimal
+    average_per_visit: Decimal
+    months_analyzed: int
+
+
+class SpendingIncreaseRecommendation(SavingsRecommendationBase):
+    type: str = "spending_increase"
+    category: Optional[str] = None
+    merchant: Optional[str] = None
+    previous_monthly_avg: Decimal
+    current_monthly_avg: Decimal
+    percent_increase: float
+    months_analyzed: int
+
+
+class SavingsRecommendationsResponse(BaseModel):
+    recommendations: List[SavingsRecommendationBase]
+    total_estimated_monthly_savings: Decimal
+    total_estimated_annual_savings: Decimal
+    categories_analyzed: int
+    merchants_analyzed: int
+    months_of_data: int
+    generated_at: datetime
