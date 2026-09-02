@@ -53,6 +53,31 @@ class TransactionBase(BaseModel):
     is_user_confirmed_recurring: bool = False
     raw_text: Optional[str] = None
 
+class TransactionUpdate(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    category: Optional[str] = None
+    subcategory: Optional[str] = None
+    description: Optional[str] = None
+    amount: Optional[Decimal] = None
+    transaction_type: Optional[str] = None
+    date: Optional[date_type] = None
+    is_recurring: Optional[bool] = None
+
+    @field_validator("transaction_type")
+    @classmethod
+    def validate_transaction_type(cls, v):
+        if v is not None and v not in ("debit", "credit"):
+            raise ValueError("transaction_type must be 'debit' or 'credit'")
+        return v
+
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("amount must be positive")
+        return v
+
 class TransactionCreate(TransactionBase):
     pass
 

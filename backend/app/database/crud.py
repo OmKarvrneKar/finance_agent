@@ -91,11 +91,16 @@ def update_transaction(db: Session, transaction_id: int, user_id: int, updates: 
         return None
     for key, value in updates.items():
         if hasattr(tx, key) and value is not None:
-            if key == "date" and isinstance(value, str):
-                try:
-                    value = datetime.strptime(value, "%Y-%m-%d").date()
-                except ValueError:
-                    pass
+            if key == "date":
+                if isinstance(value, str):
+                    try:
+                        value = datetime.strptime(value, "%Y-%m-%d").date()
+                    except ValueError:
+                        raise ValueError(f"Invalid date format: '{value}'. Expected YYYY-MM-DD.")
+                elif isinstance(value, date) and not isinstance(value, datetime):
+                    pass  # already a date object
+                else:
+                    raise ValueError(f"Invalid date value: {value}")
             setattr(tx, key, value)
     db.commit()
     db.refresh(tx)

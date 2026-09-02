@@ -117,8 +117,7 @@ def test_update_rejects_invalid_fields(client, user_a_auth):
     _seed_5_transactions(client, user_a_auth)
     tx_id = client.get("/api/transactions", headers=user_a_auth).json()["transactions"][0]["id"]
     res = client.put(f"/api/transactions/{tx_id}", json={"user_id": 999, "category": "OK"}, headers=user_a_auth)
-    assert res.status_code == 200
-    assert res.json()["category"] == "OK"
+    assert res.status_code == 422  # unknown fields rejected
 
 def test_delete_transaction(client, user_a_auth):
     _seed_5_transactions(client, user_a_auth)

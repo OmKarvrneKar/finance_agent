@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import Dict, Any, List
+from typing import List
 from decimal import Decimal
 import logging
 
@@ -8,7 +8,7 @@ from app.database.db import get_db, User
 from app.database import crud
 from app.services.csv_parser import parse_bank_csv
 from app.services.categorizer import categorize_transactions
-from app.models.schemas import UploadSummaryResponse, PaginatedTransactionsResponse, SubscriptionResponse
+from app.models.schemas import UploadSummaryResponse, PaginatedTransactionsResponse, SubscriptionResponse, TransactionUpdate
 from app.auth import get_current_user
 from app.dependencies import upload_rate_limit
 
@@ -168,16 +168,18 @@ def get_transactions(
 @router.put("/transactions/{transaction_id}")
 def update_transaction_endpoint(
     transaction_id: int,
-    updates: Dict[str, Any],
+    updates: TransactionUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    allowed_fields = {"category", "subcategory", "description", "amount", "transaction_type", "date", "is_recurring"}
-    filtered = {k: v for k, v in updates.items() if k in allowed_fields}
-    if not filtered:
+    update_data = updates.model_dump(exclude_unset=True)
+    if not update_data:
         raise HTTPException(status_code=400, detail="No valid fields to update.")
 
-    tx = crud.update_transaction(db, transaction_id, current_user.id, filtered)
+    try:
+        tx = crud.update_transaction(db, transaction_id, current_user.id, update_data)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found.")
     return tx
