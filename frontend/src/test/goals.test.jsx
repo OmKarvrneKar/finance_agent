@@ -5,6 +5,8 @@ import { AuthProvider } from '../context/AuthContext';
 import Goals from '../pages/Goals';
 
 vi.mock('../utils/api', () => ({
+  getMe: vi.fn().mockRejectedValue(new Error('no auth')),
+  logoutUser: vi.fn(),
   getSavingsGoals: vi.fn(),
   getSavingsGoal: vi.fn(),
   createSavingsGoal: vi.fn(),
@@ -14,7 +16,7 @@ vi.mock('../utils/api', () => ({
   getGoalsSummary: vi.fn(),
 }));
 
-import { getSavingsGoals, createSavingsGoal, deleteSavingsGoal, contributeToGoal, getGoalsSummary } from '../utils/api';
+import { getSavingsGoals, createSavingsGoal, deleteSavingsGoal, contributeToGoal, getGoalsSummary, getMe } from '../utils/api';
 
 const mockGoal = (overrides = {}) => ({
   id: 1,
@@ -41,8 +43,7 @@ const mockSummary = {
 };
 
 const renderWithAuth = (ui) => {
-  localStorage.setItem('token', 'fake-jwt');
-  localStorage.setItem('user', JSON.stringify({ email: 'test@test.com' }));
+  getMe.mockResolvedValue({ email: 'test@test.com' });
   return render(<MemoryRouter><AuthProvider>{ui}</AuthProvider></MemoryRouter>);
 };
 

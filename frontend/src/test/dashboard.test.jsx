@@ -5,13 +5,15 @@ import { AuthProvider } from '../context/AuthContext';
 import Dashboard from '../pages/Dashboard';
 
 vi.mock('../utils/api', () => ({
+  getMe: vi.fn().mockRejectedValue(new Error('no auth')),
+  logoutUser: vi.fn(),
   getAnalyticsSummary: vi.fn(),
 }));
 
 vi.mock('../components/ForecastAlerts', () => ({ default: () => <div data-testid="forecast-alerts" /> }));
 vi.mock('../components/AnomalyAlerts', () => ({ default: () => <div data-testid="anomaly-alerts" /> }));
 
-import { getAnalyticsSummary } from '../utils/api';
+import { getAnalyticsSummary, getMe } from '../utils/api';
 
 const mockAnalytics = {
   total_income: 50000,
@@ -31,8 +33,7 @@ const mockAnalytics = {
 };
 
 const renderWithAuth = (ui) => {
-  localStorage.setItem('token', 'fake-jwt');
-  localStorage.setItem('user', JSON.stringify({ email: 'test@test.com' }));
+  getMe.mockResolvedValue({ email: 'test@test.com' });
   return render(<MemoryRouter><AuthProvider>{ui}</AuthProvider></MemoryRouter>);
 };
 

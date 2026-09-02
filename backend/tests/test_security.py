@@ -51,6 +51,8 @@ def _clear_rate_limits():
 @pytest.fixture(autouse=True)
 def setup_db():
     _clear_rate_limits()
+    from app.main import app
+    TestClient(app).cookies.clear()
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)

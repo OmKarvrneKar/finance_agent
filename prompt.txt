@@ -1,53 +1,40 @@
-Implement ONLY Phase 2J: Authentication Hardening.
+Do a READ-ONLY verification of Phase 2K. Do not modify code.
 
-Fix the authentication issues identified in the final audit.
+Show the actual implementation/configuration for:
 
-1. Backend logout
+1. Login JWT cookie:
 
-* Add POST /api/auth/logout.
-* Implement server-side JWT revocation/blacklisting.
-* Revoked tokens must be rejected by get_current_user.
-* Make revocation user/token specific.
-* Add appropriate database model + Alembic migration if required.
+* cookie name
+* HttpOnly
+* Secure behavior
+* SameSite
+* Max-Age/expires
+* path
 
-2. JWT lifecycle
+2. Authentication:
 
-* Keep the existing access-token behavior working.
-* Add token identification (jti) so individual tokens can be revoked.
-* Do not silently extend token lifetime.
-* Do not implement refresh tokens yet.
+* how get_current_user() reads the cookie
+* whether Authorization: Bearer remains supported
+* which source takes precedence if both exist
 
-3. Frontend
+3. Logout:
 
-* Update logout to call the backend logout endpoint before clearing local auth state.
-* Handle logout API failure safely by still clearing local client state.
+* cookie clearing
+* server-side JWT revocation
 
-4. Tests
+4. CORS:
 
-* logout endpoint
-* valid token works before logout
-* same token rejected after logout
-* revoked token cannot access protected endpoints
-* another user's token is unaffected
-* expired token behavior
-* logout when already logged out
-* frontend logout behavior
-* migration upgrade/downgrade
+* allowed origins
+* allow_credentials configuration
+* confirm wildcard origin is not used with credentials
 
-IMPORTANT:
+5. Frontend:
 
-* Do NOT migrate JWT storage to cookies yet.
-* Do NOT implement refresh tokens yet.
-* Do NOT change unrelated features.
-* Preserve existing authentication behavior.
-* Never store raw JWTs in the database; store a secure token identifier/hash as appropriate.
-* Run the full backend + frontend test suites.
+* confirm no JWT is stored in localStorage/sessionStorage
+* confirm authenticated requests use credentials: include
 
-STOP after Phase 2J and report:
+6. Tests covering the above.
 
-* files changed
-* migration details
-* logout/revocation design
-* tests added
-* backend/frontend/total tests
-* any security limitations remaining
+Do not change anything.
+
+Report exact file names and relevant implementation details, then STOP.

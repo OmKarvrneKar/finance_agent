@@ -6,6 +6,8 @@ import Transactions from '../pages/Transactions';
 import TransactionRow from '../components/TransactionRow';
 
 vi.mock('../utils/api', () => ({
+  getMe: vi.fn().mockRejectedValue(new Error('no auth')),
+  logoutUser: vi.fn(),
   searchTransactions: vi.fn(),
   deleteTransaction: vi.fn(),
   markRecurring: vi.fn(),
@@ -13,7 +15,7 @@ vi.mock('../utils/api', () => ({
   getCategories: vi.fn().mockResolvedValue([]),
 }));
 
-import { searchTransactions, deleteTransaction, markRecurring, unmarkRecurring } from '../utils/api';
+import { searchTransactions, deleteTransaction, markRecurring, unmarkRecurring, getMe } from '../utils/api';
 
 const mockTx = (overrides = {}) => ({
   id: '1',
@@ -28,8 +30,7 @@ const mockTx = (overrides = {}) => ({
 });
 
 const renderWithAuth = (ui) => {
-  localStorage.setItem('token', 'fake-jwt');
-  localStorage.setItem('user', JSON.stringify({ email: 'test@test.com' }));
+  getMe.mockResolvedValue({ email: 'test@test.com' });
   return render(<MemoryRouter><AuthProvider>{ui}</AuthProvider></MemoryRouter>);
 };
 

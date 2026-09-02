@@ -4,24 +4,14 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8001/api";
 
 const api = axios.create({
   baseURL: BASE_URL,
+  withCredentials: true,
 });
 
-// Attach JWT to every request
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Handle 401 responses
+// Handle 401 responses — redirect to login (cookie is HttpOnly, no localStorage to clean)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }

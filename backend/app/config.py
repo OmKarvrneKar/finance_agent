@@ -23,6 +23,11 @@ class Config:
     UPLOAD_DIR: str = "uploads"
     ENVIRONMENT: str = "development"
 
+    # --- Cookie configuration ---
+    COOKIE_NAME: str = "access_token"
+    COOKIE_SECURE: bool = False
+    COOKIE_SAMESITE: str = "lax"
+
     # --- Optional secrets (not required, but validated if set) ---
     OPENROUTER_API_KEY: str = ""
 
@@ -54,6 +59,13 @@ class Config:
 
         # ENVIRONMENT — optional
         cls.ENVIRONMENT = os.getenv("ENVIRONMENT", cls.ENVIRONMENT).lower()
+
+        # Cookie configuration
+        cls.COOKIE_NAME = os.getenv("COOKIE_NAME", cls.COOKIE_NAME)
+        cls.COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+        cls.COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", cls.COOKIE_SAMESITE).lower()
+        if cls.COOKIE_SECURE is False and cls.ENVIRONMENT == "production":
+            logger.warning("COOKIE_SECURE is false in production. Set COOKIE_SECURE=true for security.")
 
         # OPENROUTER_API_KEY — optional but warned if missing
         cls.OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")

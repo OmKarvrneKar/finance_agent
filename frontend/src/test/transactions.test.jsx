@@ -5,11 +5,13 @@ import { AuthProvider } from '../context/AuthContext';
 import Transactions from '../pages/Transactions';
 
 vi.mock('../utils/api', () => ({
+  getMe: vi.fn().mockRejectedValue(new Error('no auth')),
+  logoutUser: vi.fn(),
   searchTransactions: vi.fn(),
   deleteTransaction: vi.fn(),
 }));
 
-import { searchTransactions, deleteTransaction } from '../utils/api';
+import { searchTransactions, deleteTransaction, getMe } from '../utils/api';
 
 const mockTx = (overrides = {}) => ({
   id: '1',
@@ -23,8 +25,7 @@ const mockTx = (overrides = {}) => ({
 });
 
 const renderWithAuth = (ui) => {
-  localStorage.setItem('token', 'fake-jwt');
-  localStorage.setItem('user', JSON.stringify({ email: 'test@test.com' }));
+  getMe.mockResolvedValue({ email: 'test@test.com' });
   return render(<MemoryRouter><AuthProvider>{ui}</AuthProvider></MemoryRouter>);
 };
 

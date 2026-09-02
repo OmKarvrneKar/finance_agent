@@ -31,7 +31,9 @@ def setup_db():
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    c = TestClient(app)
+    c.cookies.clear()
+    return c
 
 def _register_and_login(client, email, password, name):
     client.post("/api/auth/register", json={

@@ -25,8 +25,9 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(autouse=True)
-def setup_db():
+def setup_db(client):
     app.dependency_overrides[get_db] = override_get_db
+    client.cookies.clear()
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)

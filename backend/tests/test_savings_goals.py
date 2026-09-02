@@ -24,9 +24,10 @@ def override_get_db():
         db.close()
 
 @pytest.fixture(autouse=True)
-def setup_db():
+def setup_db(client):
     from app.dependencies import _rate_store
     _rate_store.clear()
+    client.cookies.clear()
     app.dependency_overrides[get_db] = override_get_db
     Base.metadata.create_all(bind=engine)
     yield

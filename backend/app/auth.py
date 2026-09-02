@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# OAuth2 scheme (reads Bearer token from Authorization header)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+# OAuth2 scheme (reads Bearer token from Authorization header) — kept for backward compat
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 # JWT configuration from validated config
 JWT_SECRET_KEY = Config.JWT_SECRET_KEY
@@ -70,10 +70,23 @@ def revoke_token(jti: str, user_id: int, db: Session) -> None:
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
+    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
-    payload = decode_access_token(token)
+    # Authorization header takes precedence over cookie
+    jwt_token = token
+    if not jwt_token:
+        jwt_token = request.cookies.get(Config.COOKIE_NAME)
+
+    if not jwt_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    payload = decode_access_token(jwt_token)
     sub = payload.get("sub")
     if sub is None:
         raise HTTPException(
