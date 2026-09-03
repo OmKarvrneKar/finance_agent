@@ -3,7 +3,7 @@
 A full-stack AI-powered personal finance assistant that allows you to upload bank statements, automatically categorize transactions using Gemini AI, and query your financial data using natural language.
 
 ## Features
-
+..
 - **Automated Categorization**: Upload bank CSV statements and have them automatically parsed and categorized by AI.
 - **Receipt OCR & Cash Capture**: Photograph or upload receipts to automatically extract merchant, date, and amount. Uses local Tesseract OCR by default (or Gemini Vision via config) and prompts you to confirm/edit the extracted data before saving it as a cash expense.
 - **Natural Language Agent**: Ask questions about your spending ("How much did I spend on food this month?") and the AI will query the database to provide answers and insights.
