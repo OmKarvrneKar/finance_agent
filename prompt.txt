@@ -1,47 +1,61 @@
-Implement ONLY the highest-priority security fixes from the Phase 2F audit.
+Implement ONLY the next production-hardening batch from the Phase 2F audit.
 
 Fix:
 
-1. JWT_SECRET_KEY
+1. Environment validation
 
-* Remove the empty-string fallback.
-* Application must fail fast at startup if JWT_SECRET_KEY is missing/empty.
-* Never log the secret.
+* Validate all required production environment variables at startup.
+* Do not expose secret values in errors/logs.
+* Keep development behavior usable.
 
-2. Authentication rate limiting
+2. Docker hardening
 
-* Add rate limiting to /auth/login.
-* Add reasonable rate limiting to /auth/register.
-* Keep existing /agent/ask protection working.
-* Keep limits configurable through environment variables where practical.
+* Run backend as a non-root user.
+* Install required Tesseract dependency if receipt OCR still depends on it.
+* Do not copy .env, database files, uploads, or other local secrets into the image.
+* Add appropriate healthcheck configuration if practical.
 
-3. Upload rate limiting
+3. Database configuration
 
-* Add rate limiting to CSV and receipt upload endpoints.
+* Make database URL environment-configurable.
+* Make Alembic use the configured database URL.
+* Remove production reliance on create_all().
+* Keep Alembic as the schema migration mechanism.
 
-4. Add security headers middleware:
+4. Upload/storage configuration
 
-* X-Content-Type-Options
-* X-Frame-Options
-* Referrer-Policy
-* appropriate Content-Security-Policy
-* HSTS only when running behind HTTPS / production configuration.
+* Make upload/storage paths environment-configurable.
+* Preserve current behavior by default.
+* Ensure uploaded files remain outside the application source tree where practical.
 
-5. Add a global exception handler so unexpected exceptions return a generic 500 response without exposing stack traces or secrets.
+5. Password validation
+
+* Add a reasonable password-strength policy to registration.
+* Update frontend validation to match backend requirements.
+
+Tests:
+
+* startup environment validation
+* password validation
+* Docker/config behavior where testable
+* Alembic database URL configuration
+* upload path configuration
+* regression tests
 
 IMPORTANT:
 
 * Do not change authentication architecture.
-* Do not change database schema.
-* Do not change existing business features.
-* Preserve existing API behavior except for security improvements.
-* Add tests for every security fix.
-* Run the full backend + frontend test suites.
+* Do not migrate to PostgreSQL yet.
+* Do not implement new product features.
+* Do not change existing rate limits/security headers unless required for these fixes.
 
-STOP after these fixes and report:
+Run full backend + frontend tests.
+
+STOP after this batch and report:
 
 * files changed
-* security behavior
-* rate-limit values
+* Docker changes
+* environment variables added/changed
+* migration/configuration changes
 * tests added
-* backend/frontend/total tests
+* backend/frontend/total test results

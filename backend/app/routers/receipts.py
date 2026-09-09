@@ -10,6 +10,7 @@ from typing import List
 from PIL import Image, UnidentifiedImageError
 from PIL.Image import DecompressionBombError
 
+from app.config import Config
 from app.database.db import get_db, PendingReceipt, Transaction, User
 from app.models import schemas
 from app.services import receipts
@@ -18,7 +19,7 @@ from app.dependencies import upload_rate_limit
 
 router = APIRouter()
 
-UPLOAD_DIR = "uploads/receipts"
+UPLOAD_DIR = Config.get_upload_dir()
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 MAX_RECEIPT_SIZE = 10 * 1024 * 1024  # 10MB
@@ -69,7 +70,9 @@ async def upload_receipt(
         raise HTTPException(status_code=400, detail=f"Image format '{ext}' is not supported. Allowed: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}")
     
     filename = f"{uuid.uuid4().hex}.{ext}"
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    receipts_dir = os.path.join(UPLOAD_DIR, "receipts")
+    os.makedirs(receipts_dir, exist_ok=True)
+    file_path = os.path.join(receipts_dir, filename)
     
     try:
         with open(file_path, "wb") as buffer:

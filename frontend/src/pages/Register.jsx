@@ -3,6 +3,15 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Wallet } from 'lucide-react';
 
+function validatePassword(pw) {
+  const errors = [];
+  if (pw.length < 8) errors.push('at least 8 characters');
+  if (!/[A-Z]/.test(pw)) errors.push('one uppercase letter');
+  if (!/[a-z]/.test(pw)) errors.push('one lowercase letter');
+  if (!/\d/.test(pw)) errors.push('one digit');
+  return errors;
+}
+
 const Register = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -12,9 +21,15 @@ const Register = () => {
   const { register, loading } = useAuth();
   const navigate = useNavigate();
 
+  const passwordErrors = validatePassword(password);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (passwordErrors.length > 0) {
+      setError('Password does not meet requirements.');
+      return;
+    }
     try {
       await register(email, password, fullName);
       setSuccess(true);
@@ -80,6 +95,15 @@ const Register = () => {
               style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
               placeholder="Min 8 characters"
             />
+            {password.length > 0 && (
+              <div style={{ marginTop: '6px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {passwordErrors.length === 0 ? (
+                  <span style={{ color: 'var(--credit-text)' }}>Password meets requirements</span>
+                ) : (
+                  <span>Must include: {passwordErrors.join(', ')}</span>
+                )}
+              </div>
+            )}
           </div>
 
           <button

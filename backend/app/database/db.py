@@ -4,8 +4,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, D
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.orm import sessionmaker
 
-DB_FILE = "finance.db"
-DATABASE_URL = f"sqlite:///{DB_FILE}"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///finance.db")
 
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False}

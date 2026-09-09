@@ -1,8 +1,10 @@
 import os
 import logging
-import traceback
 from dotenv import load_dotenv
 load_dotenv()
+
+from app.config import validate_startup
+validate_startup()
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,9 +14,6 @@ from app.database.db import engine, Base
 from app.routers import transactions, agent, auth, goals
 
 logger = logging.getLogger(__name__)
-
-# Initialize tables on startup
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Finance Agent API",
