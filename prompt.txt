@@ -1,57 +1,54 @@
-Implement ONLY Phase 2E-A: Dashboard Analytics & Date-Range Support.
+Implement ONLY Phase 2E-C: Savings Goals & Goal Tracking.
 
-Add:
+Backend:
 
-1. Date-range controls
+* Create goal CRUD endpoints.
+* Fields: name, target_amount, current_amount, target_date, description/status as appropriate.
+* All monetary values must remain Decimal.
+* Scope every goal to the authenticated user.
+* Add contribution/update-progress functionality.
+* Calculate progress percentage.
+* Calculate projected completion date when enough contribution history/data exists.
+* Validate invalid amounts, dates, and ownership.
 
-* Current month
-* Previous month
-* Custom start/end dates
-* Clear date range
+Frontend:
 
-2. Dashboard analytics
+* Goals page.
+* Create/edit/delete goal.
+* Progress bars/cards.
+* Update contribution/progress.
+* Show target date and projected completion when available.
+* Loading, empty, and error states.
 
-* Total income
-* Total expenses
-* Net cash flow
-* Category spending breakdown
-* Spending trend over time
-* Compare selected period with the previous equivalent period
+AI:
 
-3. Ensure every dashboard query is scoped to the authenticated user's user_id.
+* Add a user-scoped goal query/tool so the finance agent can answer questions about the user's savings goals.
 
-4. Update existing charts to use the selected date range instead of hardcoded current-month/all-time logic.
+Tests:
 
-5. Handle loading, empty, invalid-date, and API-error states.
-
-6. Add backend tests for:
-
-* date-range calculations
+* CRUD
 * user isolation
-* income/expense totals
-* category breakdown
-* period comparison
-
-7. Add frontend tests for:
-
-* date-range selection
-* chart/metric updates
-* loading/empty/error states
+* Decimal calculations
+* progress percentage
+* contribution updates
+* date validation
+* projected completion
+* frontend goal flows
+* AI goal access
 
 IMPORTANT:
 
-* Do not change authentication or database architecture.
-* Keep Decimal for monetary calculations.
-* Do not implement recurring transactions, goals, forecasting improvements, notifications, or other Phase 2 features yet.
-* Preserve existing dashboard behavior where possible.
+* Do not modify authentication architecture.
+* Do not change existing transaction/subscription behavior.
+* Do not implement financial health score, investments, notifications, or forecasting improvements yet.
+* Use Alembic only if a schema change is required.
+* Run the complete backend and frontend test suites.
 
-Run the full backend and frontend test suites.
-
-STOP after Phase 2E-A and report:
+STOP after Phase 2E-C and report:
 
 * files changed
-* APIs changed/added
+* API/schema changes
+* migration details, if any
 * tests added
-* backend test result
-* frontend test result
-* any limitations
+* backend/frontend/total tests
+* limitations
