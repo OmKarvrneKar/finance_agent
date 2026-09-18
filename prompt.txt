@@ -1,0 +1,73 @@
+I have an implementation audit of this repository.
+
+DO NOT modify any files.
+
+I want you to independently verify the audit against the actual source code.
+
+For every claim in the audit, inspect the referenced files/functions/routes and tell me:
+
+1. Is the claim TRUE?
+2. Is it PARTIALLY TRUE?
+3. Is it FALSE?
+4. Is there insufficient evidence?
+
+Pay special attention to these claims:
+
+- CSV import is fully implemented
+- AI categorization is fully implemented
+- Receipt OCR works
+- Gemini Vision is stubbed
+- Natural-language agent is functional
+- Agent has 11 tools
+- Agent can query the database
+- Merchant questions such as "How much did I spend at Starbucks?" cannot be answered accurately
+- Subscription detection works
+- Anomaly detection works
+- Forecasting is only linear
+- Budget management works
+- What-if simulation works
+- Authentication is completely missing
+- Multi-user support is completely missing
+- PostgreSQL is completely missing
+- Alembic migrations are completely missing
+- Category editing is missing
+- Transaction search is missing
+- Export is missing
+- Notifications are missing
+- Frontend tests are missing
+- Backend has approximately 14 tests
+- There is an API key/secrets exposure
+- Receipt upload has filename/path security concerns
+- Financial amounts use Float
+- Agent has no conversation history
+- Agent has no merchant search tool
+
+IMPORTANT:
+Do not trust the previous audit.
+Do not assume a referenced line number proves the feature works.
+Trace the implementation through the actual call chain.
+
+For each disputed claim, give:
+
+CLAIM
+VERDICT: TRUE / PARTIAL / FALSE / UNKNOWN
+ACTUAL IMPLEMENTATION
+EVIDENCE: exact file + function/class/route
+IMPACT
+WHAT WOULD NEED TO CHANGE
+
+Then produce:
+
+1. VERIFIED FEATURES
+2. FALSE/EXAGGERATED AUDIT CLAIMS
+3. PARTIAL FEATURES
+4. REAL MISSING FEATURES
+5. SECURITY ISSUES
+6. FINANCIAL-CORRECTNESS ISSUES
+7. ARCHITECTURAL ISSUES
+8. RECOMMENDED IMPLEMENTATION ORDER
+
+Do not write code.
+Do not modify anything.
+Do not give subjective quality scores.
+Be skeptical and evidence-based.
