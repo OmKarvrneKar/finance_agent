@@ -3,8 +3,10 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 import logging
 
+from app.database.db import get_db, User
 from app.services.agent_service import process_query
 from app.dependencies import rate_limit_dependency
+from app.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,10 @@ class AgentAskResponse(BaseModel):
     steps: List[Dict[str, Any]]
 
 @router.post("/agent/ask", response_model=AgentAskResponse, dependencies=[Depends(rate_limit_dependency)])
-def ask_agent(payload: AgentAskRequest):
+def ask_agent(
+    payload: AgentAskRequest,
+    current_user: User = Depends(get_current_user),
+):
     if not payload.question.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -26,7 +31,7 @@ def ask_agent(payload: AgentAskRequest):
         )
         
     try:
-        result = process_query(payload.question)
+        result = process_query(payload.question, user_id=current_user.id)
         return result
     except ValueError as e:
         logger.error(f"Agent service configuration error: {str(e)}")

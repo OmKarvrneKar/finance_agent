@@ -33,7 +33,7 @@ def test_agent_handles_timeout_gracefully():
         mock_get.return_value = mock_client
         mock_client.chat.completions.create.side_effect = APITimeoutError(request=MagicMock())
         
-        result = process_query("What is my balance?")
+        result = process_query("What is my balance?", user_id=1)
         assert "timed out" in result["answer"].lower() or "try again" in result["answer"].lower()
 
 def test_agent_handles_connection_error_gracefully():
@@ -42,7 +42,7 @@ def test_agent_handles_connection_error_gracefully():
         mock_get.return_value = mock_client
         mock_client.chat.completions.create.side_effect = APIConnectionError(request=MagicMock())
         
-        result = process_query("What is my balance?")
+        result = process_query("What is my balance?", user_id=1)
         assert "connect" in result["answer"].lower() or "network" in result["answer"].lower()
 
 def test_agent_handles_429_rate_limit():
@@ -55,7 +55,7 @@ def test_agent_handles_429_rate_limit():
             message="rate limited", response=mock_response, body=None
         )
         
-        result = process_query("What is my balance?")
+        result = process_query("What is my balance?", user_id=1)
         assert "rate-limit" in result["answer"].lower() or "rate limit" in result["answer"].lower()
 
 def test_categorizer_handles_timeout():

@@ -272,7 +272,7 @@ TOOLS = [
     }
 ]
 
-def process_query(user_question: str) -> Dict[str, Any]:
+def process_query(user_question: str, user_id: int) -> Dict[str, Any]:
     client = get_openrouter_client()
     db = SessionLocal()
     
@@ -353,7 +353,6 @@ def process_query(user_question: str) -> Dict[str, Any]:
                     "steps": steps
                 }
                 
-            # Construct assistant message dict to append to history
             assistant_msg = {
                 "role": "assistant",
                 "content": message.content,
@@ -376,12 +375,14 @@ def process_query(user_question: str) -> Dict[str, Any]:
                 name = tool_call.function.name
                 args_str = tool_call.function.arguments
                 
-                # Parse arguments
                 try:
                     args = json.loads(args_str) if args_str else {}
                 except Exception as e:
                     logger.error(f"Failed to parse tool call arguments: {args_str}. Error: {str(e)}")
                     args = {}
+                    
+                # All tools require user_id as the second argument
+                args["user_id"] = user_id
                     
                 # Execute tool
                 if name in TOOL_MAP:
@@ -394,14 +395,12 @@ def process_query(user_question: str) -> Dict[str, Any]:
                     logger.error(f"Requested unknown tool: {name}")
                     result = {"error": f"Unknown tool name: {name}"}
                     
-                # Log step trace
                 steps.append({
                     "tool": name,
                     "args": args,
                     "result": result
                 })
                 
-                # Append tool response message to history
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
@@ -409,7 +408,6 @@ def process_query(user_question: str) -> Dict[str, Any]:
                     "content": json.dumps(result)
                 })
                 
-        # If loop ended without returning (exceeded max iterations)
         return {
             "answer": "I reached my reasoning iteration limit. Here is the last trace of my planning.",
             "steps": steps

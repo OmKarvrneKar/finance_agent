@@ -13,12 +13,13 @@ def parse_month(month_str: str) -> tuple[int, int]:
     except ValueError:
         raise ValueError("Month must be in YYYY-MM format")
 
-def get_daily_run_rate(category: Optional[str], month: str, db: Session) -> Dict[str, Any]:
+def get_daily_run_rate(category: Optional[str], month: str, db: Session, user_id: int) -> Dict[str, Any]:
     year, m = parse_month(month)
     start_date = date(year, m, 1)
     end_date = date(year, m, calendar.monthrange(year, m)[1])
     
     query = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
         Transaction.transaction_type == 'debit',
         Transaction.date >= start_date,
         Transaction.date <= end_date
@@ -44,8 +45,8 @@ def get_daily_run_rate(category: Optional[str], month: str, db: Session) -> Dict
         "latest_transaction_date": latest_date.isoformat()
     }
 
-def forecast_month_end_spend(category: Optional[str], month: str, db: Session) -> Dict[str, Any]:
-    run_rate_data = get_daily_run_rate(category, month, db)
+def forecast_month_end_spend(category: Optional[str], month: str, db: Session, user_id: int) -> Dict[str, Any]:
+    run_rate_data = get_daily_run_rate(category, month, db, user_id)
     if "error" in run_rate_data:
         return run_rate_data
         
@@ -70,8 +71,11 @@ def forecast_month_end_spend(category: Optional[str], month: str, db: Session) -
         "total_days": total_days_in_month
     }
 
-def get_historical_average(category: Optional[str], db: Session, num_past_months: int = 3, exclude_month: Optional[str] = None) -> Dict[str, Any]:
-    query = db.query(Transaction).filter(Transaction.transaction_type == 'debit')
+def get_historical_average(category: Optional[str], db: Session, user_id: int, num_past_months: int = 3, exclude_month: Optional[str] = None) -> Dict[str, Any]:
+    query = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == 'debit'
+    )
     
     if category:
         query = query.filter(func.lower(Transaction.category) == category.lower())
@@ -104,21 +108,24 @@ def get_historical_average(category: Optional[str], db: Session, num_past_months
         "recent_months": recent_months
     }
 
-def generate_overspend_alerts(db: Session, month: Optional[str] = None) -> List[Dict[str, Any]]:
+def generate_overspend_alerts(db: Session, user_id: int, month: Optional[str] = None) -> List[Dict[str, Any]]:
     if not month:
         month = datetime.today().strftime("%Y-%m")
         
-    categories = db.query(Transaction.category).filter(Transaction.transaction_type == 'debit').distinct().all()
+    categories = db.query(Transaction.category).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == 'debit'
+    ).distinct().all()
     category_names = [c[0] for c in categories if c[0]]
     
     alerts = []
     
     for cat in category_names:
-        forecast_data = forecast_month_end_spend(cat, month, db)
+        forecast_data = forecast_month_end_spend(cat, month, db, user_id)
         if "error" in forecast_data:
             continue
             
-        hist_data = get_historical_average(cat, db, num_past_months=3, exclude_month=month)
+        hist_data = get_historical_average(cat, db, user_id, num_past_months=3, exclude_month=month)
         if "error" in hist_data:
             continue
             
@@ -143,9 +150,9 @@ def generate_overspend_alerts(db: Session, month: Optional[str] = None) -> List[
             })
             
     # Overall alert
-    forecast_data = forecast_month_end_spend(None, month, db)
+    forecast_data = forecast_month_end_spend(None, month, db, user_id)
     if "error" not in forecast_data:
-        hist_data = get_historical_average(None, db, num_past_months=3, exclude_month=month)
+        hist_data = get_historical_average(None, db, user_id, num_past_months=3, exclude_month=month)
         if "error" not in hist_data:
             forecast_total = forecast_data["forecasted_total"]
             hist_avg = hist_data["historical_average"]

@@ -14,8 +14,11 @@ def normalize_merchant(name: str) -> str:
         name = name.replace(p, " ")
     return " ".join(name.split())
 
-def detect_recurring_price_jumps(db: Session, threshold_percent: float = 20):
-    txs = db.query(Transaction).filter(Transaction.is_recurring == True).order_by(Transaction.date.asc()).all()
+def detect_recurring_price_jumps(db: Session, user_id: int, threshold_percent: float = 20):
+    txs = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.is_recurring == True
+    ).order_by(Transaction.date.asc()).all()
     groups = defaultdict(list)
     for tx in txs:
         groups[normalize_merchant(tx.description)].append(tx)
@@ -48,8 +51,11 @@ def detect_recurring_price_jumps(db: Session, threshold_percent: float = 20):
             
     return anomalies
 
-def detect_duplicate_charges(db: Session, window_hours: int = 48):
-    txs = db.query(Transaction).filter(Transaction.transaction_type == 'debit').order_by(Transaction.date.asc()).all()
+def detect_duplicate_charges(db: Session, user_id: int, window_hours: int = 48):
+    txs = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == 'debit'
+    ).order_by(Transaction.date.asc()).all()
     groups = defaultdict(list)
     for tx in txs:
         groups[(normalize_merchant(tx.description), tx.amount)].append(tx)
@@ -81,8 +87,11 @@ def detect_duplicate_charges(db: Session, window_hours: int = 48):
                     })
     return anomalies
 
-def detect_unfamiliar_large_merchant(db: Session, std_dev_multiplier: float = 2.0, min_history_transactions: int = 10):
-    txs = db.query(Transaction).filter(Transaction.transaction_type == 'debit').order_by(Transaction.date.asc()).all()
+def detect_unfamiliar_large_merchant(db: Session, user_id: int, std_dev_multiplier: float = 2.0, min_history_transactions: int = 10):
+    txs = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == 'debit'
+    ).order_by(Transaction.date.asc()).all()
     if len(txs) < min_history_transactions:
         return []
         
@@ -92,7 +101,6 @@ def detect_unfamiliar_large_merchant(db: Session, std_dev_multiplier: float = 2.
     if variance == 0:
         return []
     
-    # Convert to float for math.sqrt, then back to Decimal
     std_dev = Decimal(str(math.sqrt(float(variance))))
     
     threshold = mean + (Decimal(str(std_dev_multiplier)) * std_dev)
@@ -121,14 +129,14 @@ def detect_unfamiliar_large_merchant(db: Session, std_dev_multiplier: float = 2.
         
     return anomalies
 
-def generate_anomaly_report(db: Session):
-    price_jumps = detect_recurring_price_jumps(db)
-    duplicates = detect_duplicate_charges(db)
-    unfamiliar = detect_unfamiliar_large_merchant(db)
+def generate_anomaly_report(db: Session, user_id: int):
+    price_jumps = detect_recurring_price_jumps(db, user_id)
+    duplicates = detect_duplicate_charges(db, user_id)
+    unfamiliar = detect_unfamiliar_large_merchant(db, user_id)
     
     all_anomalies = price_jumps + duplicates + unfamiliar
     
-    reviews = db.query(AnomalyReview).all()
+    reviews = db.query(AnomalyReview).filter(AnomalyReview.user_id == user_id).all()
     reviewed_sigs = set(r.anomaly_signature for r in reviews)
     
     filtered = []
@@ -139,10 +147,7 @@ def generate_anomaly_report(db: Session):
             filtered.append(a)
             
     severity_rank = {"critical": 0, "warning": 1, "info": 2}
-    
-    # Sort most recent first
     filtered.sort(key=lambda x: x.get("date") or "", reverse=True)
-    # Then by severity
     filtered.sort(key=lambda x: severity_rank[x["severity"]])
     
     return filtered

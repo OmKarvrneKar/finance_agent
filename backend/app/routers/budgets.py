@@ -2,22 +2,35 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Dict, Any
-from app.database.db import get_db, BudgetGoal, SavingsGoal
+from decimal import Decimal
+from app.database.db import get_db, BudgetGoal, SavingsGoal, User
 from app.models import schemas
 from app.services import budgets
+from app.auth import get_current_user
 
 router = APIRouter()
 
 @router.post("/budgets", response_model=schemas.BudgetGoalResponse)
-def create_or_update_budget(budget_in: schemas.BudgetGoalCreate, db: Session = Depends(get_db)):
+def create_or_update_budget(
+    budget_in: schemas.BudgetGoalCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     if budget_in.monthly_cap <= 0:
         raise HTTPException(status_code=400, detail="Monthly cap must be greater than 0.")
         
-    budget = db.query(BudgetGoal).filter(func.lower(BudgetGoal.category) == budget_in.category.lower()).first()
+    budget = db.query(BudgetGoal).filter(
+        BudgetGoal.user_id == current_user.id,
+        func.lower(BudgetGoal.category) == budget_in.category.lower()
+    ).first()
     if budget:
         budget.monthly_cap = budget_in.monthly_cap
     else:
-        budget = BudgetGoal(category=budget_in.category, monthly_cap=budget_in.monthly_cap)
+        budget = BudgetGoal(
+            user_id=current_user.id,
+            category=budget_in.category,
+            monthly_cap=budget_in.monthly_cap
+        )
         db.add(budget)
         
     db.commit()
@@ -25,12 +38,23 @@ def create_or_update_budget(budget_in: schemas.BudgetGoalCreate, db: Session = D
     return budget
 
 @router.get("/budgets", response_model=List[schemas.BudgetStatusResponse])
-def get_budgets(month: str = Query(None, description="YYYY-MM"), db: Session = Depends(get_db)):
-    return budgets.get_budget_status(db, month)
+def get_budgets(
+    month: str = Query(None, description="YYYY-MM"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return budgets.get_budget_status(db, current_user.id, month)
 
 @router.delete("/budgets/{category}")
-def delete_budget(category: str, db: Session = Depends(get_db)):
-    budget = db.query(BudgetGoal).filter(func.lower(BudgetGoal.category) == category.lower()).first()
+def delete_budget(
+    category: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    budget = db.query(BudgetGoal).filter(
+        BudgetGoal.user_id == current_user.id,
+        func.lower(BudgetGoal.category) == category.lower()
+    ).first()
     if not budget:
         raise HTTPException(status_code=404, detail="Budget not found for this category.")
     
@@ -39,20 +63,38 @@ def delete_budget(category: str, db: Session = Depends(get_db)):
     return {"message": "Budget goal removed."}
 
 @router.post("/goals", response_model=schemas.SavingsGoalResponse)
-def create_savings_goal(goal_in: schemas.SavingsGoalCreate, db: Session = Depends(get_db)):
-    goal = SavingsGoal(name=goal_in.name, target_amount=goal_in.target_amount, target_date=goal_in.target_date)
+def create_savings_goal(
+    goal_in: schemas.SavingsGoalCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    goal = SavingsGoal(
+        user_id=current_user.id,
+        name=goal_in.name,
+        target_amount=goal_in.target_amount,
+        target_date=goal_in.target_date
+    )
     db.add(goal)
     db.commit()
     db.refresh(goal)
     return goal
 
 @router.get("/goals", response_model=List[schemas.SavingsGoalResponse])
-def get_savings_goals(db: Session = Depends(get_db)):
-    return db.query(SavingsGoal).all()
+def get_savings_goals(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return db.query(SavingsGoal).filter(SavingsGoal.user_id == current_user.id).all()
 
 @router.post("/simulate")
-def simulate_budget_change(sim_in: schemas.SimulateRequest, db: Session = Depends(get_db)):
-    res = budgets.simulate_what_if(db, sim_in.category, sim_in.percent_change, sim_in.months, sim_in.goal_name)
+def simulate_budget_change(
+    sim_in: schemas.SimulateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    res = budgets.simulate_what_if(
+        db, current_user.id, sim_in.category, sim_in.percent_change, sim_in.months, sim_in.goal_name
+    )
     if "error" in res:
         raise HTTPException(status_code=400, detail=res["message"])
     return res

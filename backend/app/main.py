@@ -9,21 +9,6 @@ from app.routers import transactions, agent, auth
 # Initialize tables on startup
 Base.metadata.create_all(bind=engine)
 
-# Auto-migrate: add new columns to transactions if they don't exist
-try:
-    with engine.begin() as conn:
-        from sqlalchemy import text
-        conn.execute(text("ALTER TABLE transactions ADD COLUMN source VARCHAR DEFAULT 'bank_statement' NOT NULL"))
-except Exception:
-    pass
-
-try:
-    with engine.begin() as conn:
-        from sqlalchemy import text
-        conn.execute(text("ALTER TABLE transactions ADD COLUMN receipt_image_path VARCHAR"))
-except Exception:
-    pass
-
 app = FastAPI(
     title="Finance Agent API",
     description="Backend for AI Finance Agent statement ingestion and categorization",
@@ -36,7 +21,7 @@ import os
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
     os.getenv("FRONTEND_URL", ""),
-    "https://financeagent-sigma.vercel.app",  # your stable production URL, hardcoded as backup
+    "https://financeagent-sigma.vercel.app",
 ]
 
 app.add_middleware(

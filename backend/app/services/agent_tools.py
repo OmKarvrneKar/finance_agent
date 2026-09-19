@@ -12,12 +12,8 @@ def parse_date(date_str: str):
     except ValueError:
         return None
 
-def filter_transactions(db: Session, category: str = None, start_date: str = None, end_date: str = None, transaction_type: str = None) -> list:
-    """
-    Filter transactions in the database by category, date range, or transaction type.
-    If start_date/end_date are not provided, defaults to all-time.
-    """
-    query = db.query(Transaction)
+def filter_transactions(db: Session, user_id: int, category: str = None, start_date: str = None, end_date: str = None, transaction_type: str = None) -> list:
+    query = db.query(Transaction).filter(Transaction.user_id == user_id)
     if category:
         query = query.filter(Transaction.category.ilike(category.strip()))
     if start_date:
@@ -48,12 +44,11 @@ def filter_transactions(db: Session, category: str = None, start_date: str = Non
         for tx in transactions
     ]
 
-def sum_by_category(db: Session, start_date: str = None, end_date: str = None) -> dict:
-    """
-    Compute total spend (debits) grouped by category for the given date range.
-    If start_date/end_date are not provided, defaults to all-time.
-    """
-    query = db.query(Transaction.category, func.sum(Transaction.amount)).filter(Transaction.transaction_type == 'debit')
+def sum_by_category(db: Session, user_id: int, start_date: str = None, end_date: str = None) -> dict:
+    query = db.query(Transaction.category, func.sum(Transaction.amount)).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == 'debit'
+    )
     if start_date:
         parsed_start = parse_date(start_date)
         if parsed_start:
@@ -66,11 +61,7 @@ def sum_by_category(db: Session, start_date: str = None, end_date: str = None) -
     results = query.group_by(Transaction.category).all()
     return {category: total for category, total in results if total is not None}
 
-def compare_periods(db: Session, category: str, period1_start: str, period1_end: str, period2_start: str, period2_end: str) -> dict:
-    """
-    Compare spending in a specific category between two time periods, computing difference and percent change.
-    All dates must be formatted as YYYY-MM-DD.
-    """
+def compare_periods(db: Session, user_id: int, category: str, period1_start: str, period1_end: str, period2_start: str, period2_end: str) -> dict:
     p1_start = parse_date(period1_start)
     p1_end = parse_date(period1_end)
     p2_start = parse_date(period2_start)
@@ -80,12 +71,14 @@ def compare_periods(db: Session, category: str, period1_start: str, period1_end:
         return {"error": "Invalid date formats. Use YYYY-MM-DD."}
         
     p1_total = db.query(func.sum(Transaction.amount))\
+        .filter(Transaction.user_id == user_id)\
         .filter(Transaction.category.ilike(category.strip()))\
         .filter(Transaction.transaction_type == 'debit')\
         .filter(Transaction.date >= p1_start)\
         .filter(Transaction.date <= p1_end).scalar() or 0.0
         
     p2_total = db.query(func.sum(Transaction.amount))\
+        .filter(Transaction.user_id == user_id)\
         .filter(Transaction.category.ilike(category.strip()))\
         .filter(Transaction.transaction_type == 'debit')\
         .filter(Transaction.date >= p2_start)\
@@ -111,12 +104,11 @@ def compare_periods(db: Session, category: str, period1_start: str, period1_end:
         "percentage_change": pct_change
     }
 
-def find_recurring_transactions(db: Session) -> list:
-    """
-    Detect recurring transactions (subscriptions, bills, salary) where is_recurring is True.
-    Groups them by merchant/description, showing occurrence count, average cost, frequency, and estimated monthly cost.
-    """
-    txs = db.query(Transaction).filter(Transaction.is_recurring == True).all()
+def find_recurring_transactions(db: Session, user_id: int) -> list:
+    txs = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.is_recurring == True
+    ).all()
     if not txs:
         return []
         
@@ -173,12 +165,11 @@ def find_recurring_transactions(db: Session) -> list:
         
     return results
 
-def get_total_spent(db: Session, start_date: str = None, end_date: str = None) -> Decimal:
-    """
-    Calculate the total spending (debits) in the given date range.
-    If start_date/end_date are not provided, defaults to all-time.
-    """
-    query = db.query(func.sum(Transaction.amount)).filter(Transaction.transaction_type == 'debit')
+def get_total_spent(db: Session, user_id: int, start_date: str = None, end_date: str = None) -> Decimal:
+    query = db.query(func.sum(Transaction.amount)).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == 'debit'
+    )
     if start_date:
         parsed_start = parse_date(start_date)
         if parsed_start:
@@ -191,12 +182,11 @@ def get_total_spent(db: Session, start_date: str = None, end_date: str = None) -
     result = query.scalar()
     return result if result is not None else Decimal('0.00')
 
-def get_total_income(db: Session, start_date: str = None, end_date: str = None) -> Decimal:
-    """
-    Calculate the total income (credits) in the given date range.
-    If start_date/end_date are not provided, defaults to all-time.
-    """
-    query = db.query(func.sum(Transaction.amount)).filter(Transaction.transaction_type == 'credit')
+def get_total_income(db: Session, user_id: int, start_date: str = None, end_date: str = None) -> Decimal:
+    query = db.query(func.sum(Transaction.amount)).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == 'credit'
+    )
     if start_date:
         parsed_start = parse_date(start_date)
         if parsed_start:

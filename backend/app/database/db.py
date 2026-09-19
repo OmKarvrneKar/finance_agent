@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, Date, DateTime, Numeric
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, Date, DateTime, Numeric, ForeignKey
+from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.orm import sessionmaker
 
 DB_FILE = "finance.db"
@@ -28,6 +28,7 @@ class Transaction(Base):
     __tablename__ = "transactions"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     date = Column(Date, nullable=False)
     description = Column(String, nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
@@ -44,7 +45,8 @@ class BudgetGoal(Base):
     __tablename__ = "budget_goals"
 
     id = Column(Integer, primary_key=True, index=True)
-    category = Column(String, unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    category = Column(String, index=True, nullable=False)
     monthly_cap = Column(Numeric(12, 2), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -53,6 +55,7 @@ class SavingsGoal(Base):
     __tablename__ = "savings_goals"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String, index=True, nullable=False)
     target_amount = Column(Numeric(12, 2), nullable=False)
     target_date = Column(Date, nullable=True)
@@ -61,6 +64,7 @@ class SavingsGoal(Base):
 class PendingReceipt(Base):
     __tablename__ = "pending_receipts"
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     merchant = Column(String, nullable=True)
     date = Column(Date, nullable=True)
     amount = Column(Numeric(12, 2), nullable=True)
@@ -72,8 +76,9 @@ class PendingReceipt(Base):
 class AnomalyReview(Base):
     __tablename__ = "anomaly_reviews"
     id = Column(Integer, primary_key=True, index=True)
-    anomaly_signature = Column(String, unique=True, index=True, nullable=False)
-    status = Column(String, nullable=False) # "dismissed" | "confirmed_issue"
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    anomaly_signature = Column(String, index=True, nullable=False)
+    status = Column(String, nullable=False)  # "dismissed" | "confirmed_issue"
     reviewed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 def get_db():
