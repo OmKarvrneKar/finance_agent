@@ -1,73 +1,90 @@
-I have an implementation audit of this repository.
+Choose option 1, but DO NOT implement everything at once.
 
-DO NOT modify any files.
-
-I want you to independently verify the audit against the actual source code.
-
-For every claim in the audit, inspect the referenced files/functions/routes and tell me:
-
-1. Is the claim TRUE?
-2. Is it PARTIALLY TRUE?
-3. Is it FALSE?
-4. Is there insufficient evidence?
-
-Pay special attention to these claims:
-
-- CSV import is fully implemented
-- AI categorization is fully implemented
-- Receipt OCR works
-- Gemini Vision is stubbed
-- Natural-language agent is functional
-- Agent has 11 tools
-- Agent can query the database
-- Merchant questions such as "How much did I spend at Starbucks?" cannot be answered accurately
-- Subscription detection works
-- Anomaly detection works
-- Forecasting is only linear
-- Budget management works
-- What-if simulation works
-- Authentication is completely missing
-- Multi-user support is completely missing
-- PostgreSQL is completely missing
-- Alembic migrations are completely missing
-- Category editing is missing
-- Transaction search is missing
-- Export is missing
-- Notifications are missing
-- Frontend tests are missing
-- Backend has approximately 14 tests
-- There is an API key/secrets exposure
-- Receipt upload has filename/path security concerns
-- Financial amounts use Float
-- Agent has no conversation history
-- Agent has no merchant search tool
+First fix only the critical security and financial-data foundation.
 
 IMPORTANT:
-Do not trust the previous audit.
-Do not assume a referenced line number proves the feature works.
-Trace the implementation through the actual call chain.
+- Inspect the existing code before changing it.
+- Do not rewrite working features unnecessarily.
+- Do not break existing CSV import, AI categorization, receipt processing, AI agent, budgets, anomalies, forecasting, or dashboard functionality.
+- Run the existing backend tests after changes.
+- Add tests for every security/foundation change.
+- Do not expose or print API keys/secrets in logs or output.
 
-For each disputed claim, give:
+Implement these in this order:
 
-CLAIM
-VERDICT: TRUE / PARTIAL / FALSE / UNKNOWN
-ACTUAL IMPLEMENTATION
-EVIDENCE: exact file + function/class/route
-IMPACT
-WHAT WOULD NEED TO CHANGE
+1. API KEY / SECRET SECURITY
+- Remove any real API key from tracked/project files.
+- Do NOT print the existing key.
+- Change configuration to use OPENROUTER_API_KEY.
+- Remove the confusing GEMINI_API_KEY fallback.
+- Make missing API keys fail safely with a clear server-side error.
+- Check .gitignore and Docker configuration.
+- Add a .dockerignore so .env, database files, virtual environments, uploads, caches, and secrets are not copied into Docker images.
+- If git history contains the secret, clearly tell me that it must be rotated/revoked and removed from git history. Do not attempt destructive git-history rewriting automatically.
 
-Then produce:
+2. FILE UPLOAD SECURITY
+For receipt uploads:
+- Validate actual file type/content, not only Content-Type.
+- Add a reasonable maximum file size.
+- Generate server-side random filenames.
+- Never use the user-provided filename directly as a filesystem path.
+- Store uploads outside publicly served directories where appropriate.
+- Reject unsupported image formats.
+- Make sure malformed files cannot crash the application.
+- Add tests for invalid file types, oversized files, and malicious filenames.
 
-1. VERIFIED FEATURES
-2. FALSE/EXAGGERATED AUDIT CLAIMS
-3. PARTIAL FEATURES
-4. REAL MISSING FEATURES
-5. SECURITY ISSUES
-6. FINANCIAL-CORRECTNESS ISSUES
-7. ARCHITECTURAL ISSUES
-8. RECOMMENDED IMPLEMENTATION ORDER
+For CSV uploads:
+- Add file-size limits.
+- Validate that the uploaded content is actually a readable CSV.
+- Handle malformed CSV files gracefully.
 
-Do not write code.
-Do not modify anything.
-Do not give subjective quality scores.
-Be skeptical and evidence-based.
+3. FINANCIAL DATA CORRECTNESS
+- Inspect how Transaction.amount is currently represented.
+- Replace Float with Decimal/Numeric suitable for currency.
+- Update calculations, schemas, serializers, AI tools, forecasting, budgets, anomalies, and what-if calculations accordingly.
+- Preserve existing API behavior where possible.
+- Add tests proving monetary calculations remain accurate.
+
+4. ERROR HANDLING
+- Do not swallow exceptions silently.
+- Give the frontend safe, useful error messages.
+- Keep detailed errors server-side only.
+- Add appropriate timeouts for external AI requests.
+- Do not expose API keys or internal stack traces.
+
+5. RATE LIMITING / ABUSE PROTECTION
+- Protect the AI endpoint from unlimited requests if practical within the current architecture.
+- If a proper rate-limiter dependency is needed, explain the choice before adding unnecessary dependencies.
+- At minimum, prevent obviously unlimited AI API abuse.
+
+6. TESTING
+Run the existing tests.
+
+Add tests covering:
+- Secret/config loading
+- Decimal money calculations
+- Receipt upload validation
+- CSV upload validation
+- Path traversal/malicious filenames
+- AI API failure handling
+- Existing functionality regression
+
+7. FINAL REPORT
+After implementation, report:
+- Files changed
+- What was fixed
+- Tests added
+- Test results
+- Any remaining security risks
+- Any breaking changes
+- Anything that requires manual action from me
+
+DO NOT:
+- Implement authentication yet
+- Migrate to PostgreSQL yet
+- Add new UI features yet
+- Add merchant search yet
+- Add dashboard features yet
+- Implement unrelated improvements
+
+The goal of this task is to make the existing application safer and financially reliable without changing its product scope.
