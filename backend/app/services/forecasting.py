@@ -1,5 +1,6 @@
 import calendar
 from datetime import datetime, date
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -34,11 +35,11 @@ def get_daily_run_rate(category: Optional[str], month: str, db: Session) -> Dict
     latest_date = max(t.date for t in txs)
     
     days_passed = (latest_date - start_date).days + 1
-    run_rate = total_spend / days_passed if days_passed > 0 else total_spend
+    run_rate = total_spend / Decimal(str(days_passed)) if days_passed > 0 else total_spend
     
     return {
-        "daily_run_rate": round(run_rate, 2),
-        "total_spend_so_far": round(total_spend, 2),
+        "daily_run_rate": run_rate,
+        "total_spend_so_far": total_spend,
         "days_passed": days_passed,
         "latest_transaction_date": latest_date.isoformat()
     }
@@ -59,10 +60,10 @@ def forecast_month_end_spend(category: Optional[str], month: str, db: Session) -
     if days_remaining < 0:
         days_remaining = 0
         
-    forecasted_total = spend_so_far + (run_rate * days_remaining)
+    forecasted_total = spend_so_far + (run_rate * Decimal(str(days_remaining)))
     
     return {
-        "forecasted_total": round(forecasted_total, 2),
+        "forecasted_total": forecasted_total,
         "daily_run_rate": run_rate,
         "spend_so_far": spend_so_far,
         "days_remaining": days_remaining,
@@ -87,7 +88,7 @@ def get_historical_average(category: Optional[str], db: Session, num_past_months
     monthly_totals = {}
     for t in txs:
         month_key = t.date.strftime("%Y-%m")
-        monthly_totals[month_key] = monthly_totals.get(month_key, 0) + t.amount
+        monthly_totals[month_key] = monthly_totals.get(month_key, Decimal('0.00')) + t.amount
         
     if not monthly_totals:
         return {"error": "no historical data", "message": "No transactions found in prior months."}
@@ -98,7 +99,7 @@ def get_historical_average(category: Optional[str], db: Session, num_past_months
     avg_spend = sum(monthly_totals[m] for m in recent_months) / len(recent_months)
     
     return {
-        "historical_average": round(avg_spend, 2),
+        "historical_average": avg_spend,
         "months_used": len(recent_months),
         "recent_months": recent_months
     }
@@ -127,7 +128,7 @@ def generate_overspend_alerts(db: Session, month: Optional[str] = None) -> List[
         if hist_avg > 0:
             percent_over = ((forecast_total - hist_avg) / hist_avg) * 100
         else:
-            percent_over = 100 if forecast_total > 0 else 0
+            percent_over = Decimal('100') if forecast_total > 0 else Decimal('0')
             
         if percent_over > 15:
             severity = "critical" if percent_over > 30 else "warning"
@@ -136,9 +137,9 @@ def generate_overspend_alerts(db: Session, month: Optional[str] = None) -> List[
                 "current_spend": forecast_data["spend_so_far"],
                 "forecasted_spend": forecast_total,
                 "historical_average": hist_avg,
-                "percent_over": round(percent_over, 1),
+                "percent_over": percent_over,
                 "severity": severity,
-                "message": f"Forecasted to overspend by {round(percent_over, 1)}% in {cat} compared to historical average."
+                "message": f"Forecasted to overspend by {percent_over}% in {cat} compared to historical average."
             })
             
     # Overall alert
@@ -152,7 +153,7 @@ def generate_overspend_alerts(db: Session, month: Optional[str] = None) -> List[
             if hist_avg > 0:
                 percent_over = ((forecast_total - hist_avg) / hist_avg) * 100
             else:
-                percent_over = 100 if forecast_total > 0 else 0
+                percent_over = Decimal('100') if forecast_total > 0 else Decimal('0')
                 
             if percent_over > 15:
                 severity = "critical" if percent_over > 30 else "warning"
@@ -161,9 +162,9 @@ def generate_overspend_alerts(db: Session, month: Optional[str] = None) -> List[
                     "current_spend": forecast_data["spend_so_far"],
                     "forecasted_spend": forecast_total,
                     "historical_average": hist_avg,
-                    "percent_over": round(percent_over, 1),
+                    "percent_over": percent_over,
                     "severity": severity,
-                    "message": f"Overall forecast is {round(percent_over, 1)}% over historical average."
+                    "message": f"Overall forecast is {percent_over}% over historical average."
                 })
                 
     alerts.sort(key=lambda x: x["percent_over"], reverse=True)

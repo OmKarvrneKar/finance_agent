@@ -1,5 +1,6 @@
 import calendar
 from datetime import datetime, date
+from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.database.db import BudgetGoal, SavingsGoal, Transaction
@@ -30,7 +31,7 @@ def get_budget_status(db: Session, month: Optional[str] = None) -> List[Dict[str
         days_left = 0
         
     # Expected spend threshold at this point in the month
-    time_elapsed_pct = days_passed / total_days
+    time_elapsed_pct = Decimal(str(days_passed)) / Decimal(str(total_days))
     
     budgets = db.query(BudgetGoal).all()
     status_list = []
@@ -41,19 +42,19 @@ def get_budget_status(db: Session, month: Optional[str] = None) -> List[Dict[str
             Transaction.transaction_type == 'debit',
             Transaction.date >= start_date,
             Transaction.date <= end_date
-        ).scalar() or 0.0
+        ).scalar() or Decimal('0.00')
         
-        percent_used = (current_spend / b.monthly_cap) * 100 if b.monthly_cap > 0 else 100.0
+        percent_used = (current_spend / b.monthly_cap) * 100 if b.monthly_cap > 0 else Decimal('100.0')
         
         # "on_track (<80% of cap given time elapsed in month), approaching (80-100%), over (>100%)"
         expected_cap = b.monthly_cap * time_elapsed_pct
         
         if current_spend > b.monthly_cap:
             status = "over"
-            msg = f"You are over your {b.category} budget by ₹{(current_spend - b.monthly_cap):.2f}."
-        elif current_spend >= (b.monthly_cap * 0.8):
+            msg = f"You are over your {b.category} budget by ₹{current_spend - b.monthly_cap}."
+        elif current_spend >= (b.monthly_cap * Decimal('0.8')):
             status = "approaching"
-            msg = f"You are approaching your {b.category} budget ({percent_used:.1f}% used)."
+            msg = f"You are approaching your {b.category} budget ({percent_used}% used)."
         else:
             status = "on_track"
             msg = f"You are on track for your {b.category} budget."
@@ -62,7 +63,7 @@ def get_budget_status(db: Session, month: Optional[str] = None) -> List[Dict[str
             "category": b.category,
             "monthly_cap": b.monthly_cap,
             "current_spend": current_spend,
-            "percent_used": round(percent_used, 1),
+            "percent_used": percent_used,
             "days_left_in_month": days_left,
             "status": status,
             "message": msg
@@ -77,21 +78,21 @@ def simulate_what_if(db: Session, category: str, percent_change: float, months: 
         
     baseline_monthly = hist["historical_average"]
     
-    new_monthly = baseline_monthly * (1 + (percent_change / 100.0))
+    new_monthly = baseline_monthly * (1 + (Decimal(str(percent_change)) / Decimal('100.0')))
     if new_monthly < 0:
-        new_monthly = 0.0
+        new_monthly = Decimal('0.00')
         
-    monthly_delta = baseline_monthly - new_monthly 
+    monthly_delta = baseline_monthly - new_monthly
     
-    projected_total = monthly_delta * months
+    projected_total = monthly_delta * Decimal(str(months))
     
     result = {
         "category": category,
         "percent_change": percent_change,
-        "baseline_monthly_spend": round(baseline_monthly, 2),
-        "new_monthly_spend": round(new_monthly, 2),
-        "monthly_delta": round(monthly_delta, 2),
-        "projected_total_over_period": round(projected_total, 2),
+        "baseline_monthly_spend": baseline_monthly,
+        "new_monthly_spend": new_monthly,
+        "monthly_delta": monthly_delta,
+        "projected_total_over_period": projected_total,
         "months_to_goal": None
     }
     
@@ -99,6 +100,6 @@ def simulate_what_if(db: Session, category: str, percent_change: float, months: 
         goal = db.query(SavingsGoal).filter(func.lower(SavingsGoal.name) == goal_name.lower()).first()
         if goal:
             months_to_goal = goal.target_amount / monthly_delta
-            result["months_to_goal"] = round(months_to_goal, 1)
+            result["months_to_goal"] = months_to_goal
             
     return result

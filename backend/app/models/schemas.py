@@ -1,11 +1,12 @@
 from pydantic import BaseModel
 from datetime import date as date_type, datetime
+from decimal import Decimal
 from typing import List, Dict, Optional
 
 class TransactionBase(BaseModel):
     date: date_type
     description: str
-    amount: float
+    amount: Decimal
     transaction_type: str  # 'debit' or 'credit'
     category: str
     subcategory: Optional[str] = None
@@ -24,7 +25,7 @@ class TransactionResponse(TransactionBase):
 
 class UploadSummaryResponse(BaseModel):
     total_transactions: int
-    total_spent: float
+    total_spent: Decimal
     category_breakdown: Dict[str, int]
     new_transactions: int
     duplicate_transactions: int
@@ -39,12 +40,12 @@ class PaginatedTransactionsResponse(BaseModel):
 
 class BudgetGoalCreate(BaseModel):
     category: str
-    monthly_cap: float
+    monthly_cap: Decimal
 
 class BudgetGoalResponse(BaseModel):
     id: int
     category: str
-    monthly_cap: float
+    monthly_cap: Decimal
     created_at: datetime
     updated_at: datetime
 
@@ -53,13 +54,13 @@ class BudgetGoalResponse(BaseModel):
 
 class SavingsGoalCreate(BaseModel):
     name: str
-    target_amount: float
+    target_amount: Decimal
     target_date: Optional[date_type] = None
 
 class SavingsGoalResponse(BaseModel):
     id: int
     name: str
-    target_amount: float
+    target_amount: Decimal
     target_date: Optional[date_type] = None
     created_at: datetime
 
@@ -68,9 +69,9 @@ class SavingsGoalResponse(BaseModel):
 
 class BudgetStatusResponse(BaseModel):
     category: str
-    monthly_cap: float
-    current_spend: float
-    percent_used: float
+    monthly_cap: Decimal
+    current_spend: Decimal
+    percent_used: Decimal
     days_left_in_month: int
     status: str
     message: str
@@ -85,7 +86,7 @@ class PendingReceiptResponse(BaseModel):
     id: int
     merchant: Optional[str] = None
     date: Optional[date_type] = None
-    amount: Optional[float] = None
+    amount: Optional[Decimal] = None
     category: Optional[str] = None
     raw_text: Optional[str] = None
     image_path: str
@@ -97,7 +98,7 @@ class PendingReceiptResponse(BaseModel):
 class ReceiptConfirmRequest(BaseModel):
     merchant: str
     date: date_type
-    amount: float
+    amount: Decimal
     category: str
 
 class AnomalyResponse(BaseModel):
@@ -108,11 +109,11 @@ class AnomalyResponse(BaseModel):
     message: str
     date: Optional[str] = None
     merchant: str
-    amount: Optional[float] = None
-    previous_amount: Optional[float] = None
-    new_amount: Optional[float] = None
+    amount: Optional[Decimal] = None
+    previous_amount: Optional[Decimal] = None
+    new_amount: Optional[Decimal] = None
     percent_increase: Optional[float] = None
     dates: Optional[List[str]] = None
     gap_hours: Optional[int] = None
-    user_avg_amount: Optional[float] = None
-    user_std_dev: Optional[float] = None
+    user_avg_amount: Optional[Decimal] = None
+    user_std_dev: Optional[Decimal] = None

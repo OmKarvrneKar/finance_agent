@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
 from sqlalchemy.orm import Session
 from typing import Dict, Any, List
+from decimal import Decimal
 import logging
 
 from app.database.db import get_db
@@ -35,6 +36,14 @@ async def upload_statement(file: UploadFile = File(...), db: Session = Depends(g
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The uploaded CSV file is empty."
+        )
+    
+    # Validate file size (5MB max)
+    MAX_CSV_SIZE = 5 * 1024 * 1024
+    if len(file_bytes) > MAX_CSV_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Maximum size is {MAX_CSV_SIZE // (1024*1024)}MB."
         )
         
     # 1. Parse CSV
@@ -102,7 +111,7 @@ async def upload_statement(file: UploadFile = File(...), db: Session = Depends(g
         
     return {
         "total_transactions": total_tx,
-        "total_spent": round(total_spent, 2),
+        "total_spent": total_spent,
         "category_breakdown": category_counts,
         "new_transactions": total_tx,
         "duplicate_transactions": duplicates,
@@ -161,7 +170,7 @@ def get_subscriptions(db: Session = Depends(get_db)):
     for desc, txs in grouped.items():
         occurrences = len(txs)
         total_amount = sum(tx.amount for tx in txs)
-        avg_amount = total_amount / occurrences
+        avg_amount = total_amount / Decimal(str(occurrences))
         
         valid_dates = []
         for tx in txs:
@@ -183,28 +192,28 @@ def get_subscriptions(db: Session = Depends(get_db)):
         
         if charges_per_month >= 3.5:
             frequency = "Weekly"
-            monthly_cost = avg_amount * 4.33
+            monthly_cost = avg_amount * Decimal('4.33')
         elif charges_per_month >= 1.5:
             frequency = "Bi-weekly"
-            monthly_cost = avg_amount * 2.16
+            monthly_cost = avg_amount * Decimal('2.16')
         elif charges_per_month >= 0.8:
             frequency = "Monthly"
             monthly_cost = avg_amount
         elif charges_per_month >= 0.3:
             frequency = "Quarterly"
-            monthly_cost = avg_amount / 3.0
+            monthly_cost = avg_amount / Decimal('3.0')
         else:
             frequency = "Yearly"
-            monthly_cost = avg_amount / 12.0
+            monthly_cost = avg_amount / Decimal('12.0')
             
         results.append({
             "description": txs[0].description,
             "category": txs[0].category,
             "occurrences": occurrences,
-            "average_amount": round(avg_amount, 2),
+            "average_amount": avg_amount,
             "frequency": frequency,
-            "estimated_monthly_cost": round(monthly_cost, 2),
-            "estimated_annual_cost": round(monthly_cost * 12, 2),
+            "estimated_monthly_cost": monthly_cost,
+            "estimated_annual_cost": monthly_cost * Decimal('12'),
             "last_seen": sorted_dates[-1].isoformat() if sorted_dates else "Unknown"
         })
         

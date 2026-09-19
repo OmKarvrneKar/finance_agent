@@ -2,6 +2,7 @@ import io
 import re
 import pandas as pd
 from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
 
 # Define common variations for each column type (lowercase, stripped)
 DATE_COLS = {'date', 'txn date', 'transaction date', 'tran date', 'value date', 'post date', 'txndate'}
@@ -84,18 +85,18 @@ def parse_bank_csv(file_bytes: bytes) -> list:
     # Helper to parse floats from currency string
     def clean_amount(val):
         if pd.isna(val):
-            return 0.0
+            return Decimal('0.00')
         val_str = str(val).strip()
         # Remove currency symbols and commas, handle parentheses for negative amounts
         val_str = re.sub(r'[^\d\.\-\(\)]', '', val_str)
         if not val_str:
-            return 0.0
+            return Decimal('0.00')
         if val_str.startswith('(') and val_str.endswith(')'):
             val_str = '-' + val_str[1:-1]
         try:
-            return float(val_str)
-        except ValueError:
-            return 0.0
+            return Decimal(val_str).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        except Exception:
+            return Decimal('0.00')
 
     # Helper to parse date formats
     def parse_date(val):
@@ -135,10 +136,10 @@ def parse_bank_csv(file_bytes: bytes) -> list:
         if not desc or desc.lower() in ['nan', 'null', '']:
             continue
             
-        debit_val = clean_amount(row.get(debit_col)) if debit_col else 0.0
-        credit_val = clean_amount(row.get(credit_col)) if credit_col else 0.0
+        debit_val = clean_amount(row.get(debit_col)) if debit_col else Decimal('0.00')
+        credit_val = clean_amount(row.get(credit_col)) if credit_col else Decimal('0.00')
         
-        amount = 0.0
+        amount = Decimal('0.00')
         t_type = 'debit'
         
         if debit_val > 0:

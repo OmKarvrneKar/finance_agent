@@ -3,7 +3,7 @@ import json
 import logging
 from PIL import Image, UnidentifiedImageError
 from datetime import datetime, date
-from openai import OpenAI
+from openai import OpenAI, APITimeoutError, APIConnectionError, APIStatusError
 import pytesseract
 
 logger = logging.getLogger(__name__)
@@ -11,12 +11,18 @@ logger = logging.getLogger(__name__)
 # Config flag for OCR approach
 OCR_PROVIDER = os.getenv("OCR_PROVIDER", "tesseract") # options: "tesseract" or "gemini_vision"
 
-# Initialize OpenRouter/Gemini client for AI extraction
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=OPENROUTER_API_KEY,
-)
+def get_openrouter_client() -> OpenAI:
+    """Lazy client creation to avoid import-time failures when API key is not set."""
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key or api_key == "your_key_here":
+        raise ValueError("OPENROUTER_API_KEY is not configured in the environment.")
+    
+    return OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key,
+        timeout=30.0,
+        max_retries=0
+    )
 
 def extract_receipt_text(image_path: str) -> str:
     """Extract raw text from an image using Tesseract OCR."""
@@ -40,6 +46,12 @@ def parse_receipt_with_ai(raw_text: str) -> dict:
     """Send OCR text to Gemini to extract structured receipt data."""
     if not raw_text or not raw_text.strip():
         return {"needs_review": True, "error": "No text extracted from image."}
+    
+    try:
+        client = get_openrouter_client()
+    except ValueError as e:
+        logger.error(f"AI client configuration error: {e}")
+        return {"needs_review": True, "error": "AI service not configured."}
         
     prompt = f"""
     You are a precise data extraction assistant. I am providing you with the raw OCR text extracted from a receipt.
@@ -86,6 +98,15 @@ def parse_receipt_with_ai(raw_text: str) -> dict:
             "category": parsed.get("category"),
             "needs_review": parsed.get("needs_review", True)
         }
+    except APITimeoutError:
+        logger.error("AI service timeout during receipt parsing")
+        return {"needs_review": True, "error": "AI service timed out."}
+    except APIConnectionError as e:
+        logger.error(f"AI service connection error during receipt parsing: {e}")
+        return {"needs_review": True, "error": "Could not connect to AI service."}
+    except APIStatusError as e:
+        logger.error(f"AI service error during receipt parsing: status={e.status_code}")
+        return {"needs_review": True, "error": f"AI service error (HTTP {e.status_code})."}
     except Exception as e:
         logger.error(f"AI Parse Error: {e}")
         return {"needs_review": True, "error": "AI extraction failed."}

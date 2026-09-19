@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, Date, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, Date, DateTime, Numeric
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -20,7 +20,7 @@ class Transaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     date = Column(Date, nullable=False)
     description = Column(String, nullable=False)
-    amount = Column(Float, nullable=False)
+    amount = Column(Numeric(12, 2), nullable=False)
     transaction_type = Column(String, nullable=False)  # 'debit' or 'credit'
     category = Column(String, nullable=False)
     subcategory = Column(String, nullable=True)
@@ -35,7 +35,7 @@ class BudgetGoal(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     category = Column(String, unique=True, index=True, nullable=False)
-    monthly_cap = Column(Float, nullable=False)
+    monthly_cap = Column(Numeric(12, 2), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -44,7 +44,7 @@ class SavingsGoal(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
-    target_amount = Column(Float, nullable=False)
+    target_amount = Column(Numeric(12, 2), nullable=False)
     target_date = Column(Date, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -53,7 +53,7 @@ class PendingReceipt(Base):
     id = Column(Integer, primary_key=True, index=True)
     merchant = Column(String, nullable=True)
     date = Column(Date, nullable=True)
-    amount = Column(Float, nullable=True)
+    amount = Column(Numeric(12, 2), nullable=True)
     category = Column(String, nullable=True)
     raw_text = Column(String, nullable=True)
     image_path = Column(String, nullable=False)

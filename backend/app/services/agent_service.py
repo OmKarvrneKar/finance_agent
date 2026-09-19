@@ -3,7 +3,7 @@ import json
 import logging
 import datetime
 from typing import Dict, Any, List
-from openai import OpenAI
+from openai import OpenAI, APITimeoutError, APIConnectionError, APIStatusError
 from app.database.db import SessionLocal
 import app.services.agent_tools as agent_tools
 import app.services.forecasting as forecasting
@@ -13,13 +13,15 @@ import app.services.anomalies as anomalies
 logger = logging.getLogger(__name__)
 
 def get_openrouter_client() -> OpenAI:
-    api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key or api_key == "your_key_here":
-        raise ValueError("Neither OPENROUTER_API_KEY nor GEMINI_API_KEY is configured in the environment.")
+        raise ValueError("OPENROUTER_API_KEY is not configured in the environment.")
     
     return OpenAI(
         base_url="https://openrouter.ai/api/v1",
-        api_key=api_key
+        api_key=api_key,
+        timeout=30.0,
+        max_retries=0
     )
 
 # Map names to Python functions
@@ -299,16 +301,46 @@ def process_query(user_question: str) -> Dict[str, Any]:
     
     try:
         for i in range(max_iterations):
-            response = client.chat.completions.create(
-                model="google/gemini-2.5-flash",
-                messages=messages,
-                tools=TOOLS,
-                max_tokens=1500,
-                extra_headers={
-                    "HTTP-Referer": "http://localhost:5173",
-                    "X-Title": "AI Finance Agent"
+            try:
+                response = client.chat.completions.create(
+                    model="google/gemini-2.5-flash",
+                    messages=messages,
+                    tools=TOOLS,
+                    max_tokens=1500,
+                    extra_headers={
+                        "HTTP-Referer": "http://localhost:5173",
+                        "X-Title": "AI Finance Agent"
+                    }
+                )
+            except APITimeoutError:
+                logger.error("OpenRouter API timeout")
+                return {
+                    "answer": "I'm sorry, the AI service timed out. Please try again in a moment.",
+                    "steps": steps
                 }
-            )
+            except APIConnectionError as e:
+                logger.error(f"OpenRouter connection error: {str(e)}")
+                return {
+                    "answer": "I'm sorry, I couldn't connect to the AI service. Please check your network connection.",
+                    "steps": steps
+                }
+            except APIStatusError as e:
+                logger.error(f"OpenRouter API error: status={e.status_code}")
+                if e.status_code == 429:
+                    return {
+                        "answer": "I'm sorry, the AI service is rate-limited. Please try again in a moment.",
+                        "steps": steps
+                    }
+                return {
+                    "answer": f"I'm sorry, the AI service returned an error (HTTP {e.status_code}). Please try again later.",
+                    "steps": steps
+                }
+            except Exception as e:
+                logger.error(f"Unexpected AI API error: {str(e)}")
+                return {
+                    "answer": "I'm sorry, an unexpected error occurred with the AI service. Please try again later.",
+                    "steps": steps
+                }
             
             choice = response.choices[0]
             message = choice.message

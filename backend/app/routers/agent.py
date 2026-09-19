@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Dict, Any
 import logging
 
 from app.services.agent_service import process_query
+from app.dependencies import rate_limit_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ class AgentAskResponse(BaseModel):
     answer: str
     steps: List[Dict[str, Any]]
 
-@router.post("/agent/ask", response_model=AgentAskResponse)
+@router.post("/agent/ask", response_model=AgentAskResponse, dependencies=[Depends(rate_limit_dependency)])
 def ask_agent(payload: AgentAskRequest):
     if not payload.question.strip():
         raise HTTPException(

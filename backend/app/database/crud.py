@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from .db import Transaction
 from typing import List, Dict, Any, Tuple
+from decimal import Decimal
 
 def create_transactions(db: Session, transactions: List[Dict[str, Any]]) -> Tuple[List[Transaction], int]:
     db_transactions = []
@@ -9,7 +10,7 @@ def create_transactions(db: Session, transactions: List[Dict[str, Any]]) -> Tupl
         exists = db.query(Transaction).filter(
             Transaction.date == tx['date'],
             Transaction.description == tx['description'],
-            Transaction.amount == tx['amount'],
+            Transaction.amount == Decimal(str(tx['amount'])),
             Transaction.transaction_type == tx['transaction_type']
         ).first()
         

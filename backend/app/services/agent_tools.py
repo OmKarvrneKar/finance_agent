@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.database.db import Transaction
@@ -63,7 +64,7 @@ def sum_by_category(db: Session, start_date: str = None, end_date: str = None) -
             query = query.filter(Transaction.date <= parsed_end)
             
     results = query.group_by(Transaction.category).all()
-    return {category: round(total, 2) for category, total in results if total is not None}
+    return {category: total for category, total in results if total is not None}
 
 def compare_periods(db: Session, category: str, period1_start: str, period1_end: str, period2_start: str, period2_end: str) -> dict:
     """
@@ -99,15 +100,15 @@ def compare_periods(db: Session, category: str, period1_start: str, period1_end:
         "period1": {
             "start": period1_start,
             "end": period1_end,
-            "total_spent": round(p1_total, 2)
+            "total_spent": p1_total
         },
         "period2": {
             "start": period2_start,
             "end": period2_end,
-            "total_spent": round(p2_total, 2)
+            "total_spent": p2_total
         },
-        "difference": round(p2_total - p1_total, 2),
-        "percentage_change": round(pct_change, 2)
+        "difference": p2_total - p1_total,
+        "percentage_change": pct_change
     }
 
 def find_recurring_transactions(db: Session) -> list:
@@ -164,15 +165,15 @@ def find_recurring_transactions(db: Session) -> list:
             "description": group_txs[0].description,
             "category": group_txs[0].category,
             "occurrences": count,
-            "average_amount": round(avg_amount, 2),
+            "average_amount": avg_amount,
             "frequency": frequency_str,
-            "estimated_monthly_cost": round(est_monthly_cost, 2),
+            "estimated_monthly_cost": est_monthly_cost,
             "last_seen": dates[-1].isoformat()
         })
         
     return results
 
-def get_total_spent(db: Session, start_date: str = None, end_date: str = None) -> float:
+def get_total_spent(db: Session, start_date: str = None, end_date: str = None) -> Decimal:
     """
     Calculate the total spending (debits) in the given date range.
     If start_date/end_date are not provided, defaults to all-time.
@@ -188,9 +189,9 @@ def get_total_spent(db: Session, start_date: str = None, end_date: str = None) -
             query = query.filter(Transaction.date <= parsed_end)
             
     result = query.scalar()
-    return round(result, 2) if result is not None else 0.0
+    return result if result is not None else Decimal('0.00')
 
-def get_total_income(db: Session, start_date: str = None, end_date: str = None) -> float:
+def get_total_income(db: Session, start_date: str = None, end_date: str = None) -> Decimal:
     """
     Calculate the total income (credits) in the given date range.
     If start_date/end_date are not provided, defaults to all-time.
@@ -206,4 +207,4 @@ def get_total_income(db: Session, start_date: str = None, end_date: str = None) 
             query = query.filter(Transaction.date <= parsed_end)
             
     result = query.scalar()
-    return round(result, 2) if result is not None else 0.0
+    return result if result is not None else Decimal('0.00')

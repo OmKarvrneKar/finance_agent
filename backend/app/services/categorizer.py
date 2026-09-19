@@ -2,19 +2,20 @@ import os
 import json
 import logging
 from typing import List, Dict, Any
-from openai import OpenAI
+from openai import OpenAI, APITimeoutError, APIConnectionError, APIStatusError
 
 logger = logging.getLogger(__name__)
 
 def get_openrouter_client() -> OpenAI:
-    # Accept both OPENROUTER_API_KEY and GEMINI_API_KEY since the user configured it in GEMINI_API_KEY
-    api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key or api_key == "your_key_here":
-        raise ValueError("Neither OPENROUTER_API_KEY nor GEMINI_API_KEY is configured in the environment.")
+        raise ValueError("OPENROUTER_API_KEY is not configured in the environment.")
     
     return OpenAI(
         base_url="https://openrouter.ai/api/v1",
-        api_key=api_key
+        api_key=api_key,
+        timeout=60.0,
+        max_retries=0
     )
 
 def categorize_transactions(transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -80,33 +81,42 @@ def categorize_transactions(transactions: List[Dict[str, Any]]) -> List[Dict[str
                     "X-Title": "AI Finance Agent"
                 }
             )
-            
-            content_str = response.choices[0].message.content.strip()
-            batch_results_data = json.loads(content_str)
-            
-            # Extract transactions list
-            if isinstance(batch_results_data, dict):
-                batch_results = batch_results_data.get("transactions", [])
-            elif isinstance(batch_results_data, list):
-                batch_results = batch_results_data
-            else:
-                batch_results = []
-            
-            # Basic validation of response format and length
-            if not isinstance(batch_results, list) or len(batch_results) != len(batch):
-                logger.error(f"Invalid response length or format from OpenRouter. Expected {len(batch)} items, got {type(batch_results)}")
-                # Fallback list of default items
-                batch_results = [{
-                    'category': 'Other',
-                    'subcategory': None,
-                    'is_recurring': False
-                } for _ in batch]
-                
-            categorized_results.extend(batch_results)
-            
+        except APITimeoutError:
+            logger.error("OpenRouter API timeout during categorization")
+            raise RuntimeError("Transaction categorization timed out. Please try again.")
+        except APIConnectionError as e:
+            logger.error(f"OpenRouter connection error during categorization: {str(e)}")
+            raise RuntimeError("Could not connect to AI service for categorization.")
+        except APIStatusError as e:
+            logger.error(f"OpenRouter API error during categorization: status={e.status_code}")
+            raise RuntimeError(f"AI service returned an error during categorization (HTTP {e.status_code}).")
         except Exception as e:
             logger.error(f"OpenRouter API failure during categorization: {str(e)}")
-            raise RuntimeError(f"Failed to categorize transactions via OpenRouter API: {str(e)}")
+            raise RuntimeError(f"Failed to categorize transactions via AI API: {str(e)}")
+        
+        # Process response
+        content_str = response.choices[0].message.content.strip()
+        batch_results_data = json.loads(content_str)
+        
+        # Extract transactions list
+        if isinstance(batch_results_data, dict):
+            batch_results = batch_results_data.get("transactions", [])
+        elif isinstance(batch_results_data, list):
+            batch_results = batch_results_data
+        else:
+            batch_results = []
+        
+        # Basic validation of response format and length
+        if not isinstance(batch_results, list) or len(batch_results) != len(batch):
+            logger.error(f"Invalid response length or format from OpenRouter. Expected {len(batch)} items, got {type(batch_results)}")
+            # Fallback list of default items
+            batch_results = [{
+                'category': 'Other',
+                'subcategory': None,
+                'is_recurring': False
+            } for _ in batch]
+            
+        categorized_results.extend(batch_results)
             
     # Combine original transaction data with category results
     final_transactions = []

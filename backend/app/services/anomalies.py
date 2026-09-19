@@ -1,6 +1,7 @@
 import math
 from datetime import datetime
 from collections import defaultdict
+from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN
 from sqlalchemy.orm import Session
 from app.database.db import Transaction, AnomalyReview
 import string
@@ -27,7 +28,7 @@ def detect_recurring_price_jumps(db: Session, threshold_percent: float = 20):
         previous = group_txs[:-1]
         latest = group_txs[-1]
         
-        baseline = sum(tx.amount for tx in previous) / len(previous)
+        baseline = sum(tx.amount for tx in previous) / Decimal(str(len(previous)))
         if baseline == 0:
             continue
             
@@ -37,9 +38,9 @@ def detect_recurring_price_jumps(db: Session, threshold_percent: float = 20):
                 "type": "price_jump",
                 "transaction_ids": [latest.id],
                 "merchant": latest.description,
-                "previous_amount": round(baseline, 2),
-                "new_amount": round(latest.amount, 2),
-                "percent_increase": round(increase, 1),
+                "previous_amount": baseline,
+                "new_amount": latest.amount,
+                "percent_increase": increase,
                 "date": latest.date.isoformat() if latest.date else None,
                 "severity": "critical" if increase > 50 else "warning",
                 "message": f"Price jump: {latest.description} increased by {increase:.0f}% (from ₹{baseline:.2f} to ₹{latest.amount:.2f})."
@@ -86,15 +87,16 @@ def detect_unfamiliar_large_merchant(db: Session, std_dev_multiplier: float = 2.
         return []
         
     amounts = [tx.amount for tx in txs]
-    mean = sum(amounts) / len(amounts)
-    variance = sum((x - mean) ** 2 for x in amounts) / len(amounts)
+    mean = sum(amounts) / Decimal(str(len(amounts)))
+    variance = sum((x - mean) ** 2 for x in amounts) / Decimal(str(len(amounts)))
     if variance == 0:
         return []
-        
-    std_dev = math.sqrt(variance)
     
-    threshold = mean + (std_dev_multiplier * std_dev)
-    extreme_threshold = mean + (3.0 * std_dev)
+    # Convert to float for math.sqrt, then back to Decimal
+    std_dev = Decimal(str(math.sqrt(float(variance))))
+    
+    threshold = mean + (Decimal(str(std_dev_multiplier)) * std_dev)
+    extreme_threshold = mean + (Decimal('3.0') * std_dev)
     
     merchants_seen = set()
     anomalies = []
@@ -108,9 +110,9 @@ def detect_unfamiliar_large_merchant(db: Session, std_dev_multiplier: float = 2.
                     "type": "unfamiliar_merchant",
                     "transaction_ids": [tx.id],
                     "merchant": tx.description,
-                    "amount": round(tx.amount, 2),
-                    "user_avg_amount": round(mean, 2),
-                    "user_std_dev": round(std_dev, 2),
+                    "amount": tx.amount,
+                    "user_avg_amount": mean,
+                    "user_std_dev": std_dev,
                     "date": tx.date.isoformat() if tx.date else None,
                     "severity": severity,
                     "message": f"Unusually large new expense: {tx.description} for ₹{tx.amount:.2f}."

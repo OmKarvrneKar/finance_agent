@@ -1,90 +1,138 @@
-Choose option 1, but DO NOT implement everything at once.
+Phase 1 is officially complete and verified.
 
-First fix only the critical security and financial-data foundation.
+Now start Phase 2, but DO NOT implement anything yet.
+
+Perform a comprehensive Phase 2 architecture/product audit of the current AI Finance Agent and produce an implementation plan.
+
+Use the current codebase as the source of truth. Do not assume features are implemented just because they were planned.
+
+Phase 2 should specifically investigate and prioritize the major gaps identified in the original audit:
+
+1. Authentication and multi-user architecture
+
+   * User model
+   * password hashing / authentication strategy
+   * JWT/session approach
+   * authorization on every user-owned resource
+   * complete data isolation between users
+   * agent access scoped to the authenticated user
+
+2. Database architecture
+
+   * PostgreSQL readiness
+   * Alembic migrations
+   * remove startup schema mutation / manual ALTER TABLE
+   * migration from current SQLite structure
+   * proper indexes and constraints
+   * UUID/public identifiers where appropriate
+
+3. Transaction functionality
+
+   * transaction search
+   * merchant search
+   * category/date/amount filtering
+   * pagination
+   * transaction editing
+   * category correction
+   * reliable merchant-level spending queries for the AI agent
+
+4. AI Finance Agent
+
+   * audit all existing tools/function calling
+   * verify every tool is user-scoped
+   * improve merchant and date-range queries
+   * conversation history/context
+   * robust handling of ambiguous questions
+   * prevent hallucinated financial data
+   * clear error handling when data is unavailable
+
+5. Dashboard
+
+   * audit every existing dashboard component against backend capabilities
+   * identify incomplete or misleading metrics
+   * spending trends
+   * category breakdowns
+   * income vs expenses
+   * recurring expenses
+   * budgets
+   * goals
+   * forecasts
+   * anomalies
+   * useful date-range controls
+
+6. Recurring transactions
+
+   * detection
+   * management
+   * recurring expense/income tracking
+   * next expected occurrence
+   * integration with dashboard and agent
+
+7. Goals
+
+   * savings goals
+   * progress calculation
+   * target dates
+   * contribution tracking
+   * agent access
+
+8. Forecasting
+
+   * audit current linear run-rate implementation
+   * identify limitations
+   * propose a practical improvement appropriate for this project
+   * do not over-engineer
+
+9. Frontend quality
+
+   * loading/error/empty states
+   * API error handling
+   * form validation
+   * transaction editing
+   * responsive behavior
+   * frontend test strategy
+
+10. Production readiness
+
+* CORS
+* secrets/configuration
+* logging
+* rate limiting
+* security headers
+* Docker
+* deployment configuration
+* health checks
+* database connection management
+* backup/recovery considerations
 
 IMPORTANT:
-- Inspect the existing code before changing it.
-- Do not rewrite working features unnecessarily.
-- Do not break existing CSV import, AI categorization, receipt processing, AI agent, budgets, anomalies, forecasting, or dashboard functionality.
-- Run the existing backend tests after changes.
-- Add tests for every security/foundation change.
-- Do not expose or print API keys/secrets in logs or output.
 
-Implement these in this order:
+* First inspect the actual current implementation.
+* Do not duplicate Phase 1 work.
+* Do not make code changes.
+* Identify dependencies between tasks.
+* Identify which items must happen before others.
+* Separate MUST-HAVE from NICE-TO-HAVE.
+* Keep the architecture appropriate for a personal finance application; do not over-engineer.
+* Pay special attention to financial data security and user isolation.
+* Do not introduce unnecessary technologies.
 
-1. API KEY / SECRET SECURITY
-- Remove any real API key from tracked/project files.
-- Do NOT print the existing key.
-- Change configuration to use OPENROUTER_API_KEY.
-- Remove the confusing GEMINI_API_KEY fallback.
-- Make missing API keys fail safely with a clear server-side error.
-- Check .gitignore and Docker configuration.
-- Add a .dockerignore so .env, database files, virtual environments, uploads, caches, and secrets are not copied into Docker images.
-- If git history contains the secret, clearly tell me that it must be rotated/revoked and removed from git history. Do not attempt destructive git-history rewriting automatically.
+Deliver:
 
-2. FILE UPLOAD SECURITY
-For receipt uploads:
-- Validate actual file type/content, not only Content-Type.
-- Add a reasonable maximum file size.
-- Generate server-side random filenames.
-- Never use the user-provided filename directly as a filesystem path.
-- Store uploads outside publicly served directories where appropriate.
-- Reject unsupported image formats.
-- Make sure malformed files cannot crash the application.
-- Add tests for invalid file types, oversized files, and malicious filenames.
+A. Current-state findings
+B. Phase 2 priorities
+C. Recommended implementation order
+D. Detailed task-by-task implementation plan
+E. Files likely to change
+F. Database/schema changes
+G. API changes
+H. Frontend changes
+I. Testing strategy
+J. Security considerations
+K. Migration/rollback strategy
+L. Risks and tradeoffs
+M. Definition of done for Phase 2
 
-For CSV uploads:
-- Add file-size limits.
-- Validate that the uploaded content is actually a readable CSV.
-- Handle malformed CSV files gracefully.
+DO NOT IMPLEMENT ANYTHING.
 
-3. FINANCIAL DATA CORRECTNESS
-- Inspect how Transaction.amount is currently represented.
-- Replace Float with Decimal/Numeric suitable for currency.
-- Update calculations, schemas, serializers, AI tools, forecasting, budgets, anomalies, and what-if calculations accordingly.
-- Preserve existing API behavior where possible.
-- Add tests proving monetary calculations remain accurate.
-
-4. ERROR HANDLING
-- Do not swallow exceptions silently.
-- Give the frontend safe, useful error messages.
-- Keep detailed errors server-side only.
-- Add appropriate timeouts for external AI requests.
-- Do not expose API keys or internal stack traces.
-
-5. RATE LIMITING / ABUSE PROTECTION
-- Protect the AI endpoint from unlimited requests if practical within the current architecture.
-- If a proper rate-limiter dependency is needed, explain the choice before adding unnecessary dependencies.
-- At minimum, prevent obviously unlimited AI API abuse.
-
-6. TESTING
-Run the existing tests.
-
-Add tests covering:
-- Secret/config loading
-- Decimal money calculations
-- Receipt upload validation
-- CSV upload validation
-- Path traversal/malicious filenames
-- AI API failure handling
-- Existing functionality regression
-
-7. FINAL REPORT
-After implementation, report:
-- Files changed
-- What was fixed
-- Tests added
-- Test results
-- Any remaining security risks
-- Any breaking changes
-- Anything that requires manual action from me
-
-DO NOT:
-- Implement authentication yet
-- Migrate to PostgreSQL yet
-- Add new UI features yet
-- Add merchant search yet
-- Add dashboard features yet
-- Implement unrelated improvements
-
-The goal of this task is to make the existing application safer and financially reliable without changing its product scope.
+Wait for my approval after presenting the plan.
