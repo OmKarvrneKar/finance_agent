@@ -1,8 +1,33 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import date as date_type, datetime
 from decimal import Decimal
 from typing import List, Dict, Optional
 
+# Auth schemas
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    full_name: Optional[str] = None
+    is_active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+# Transaction schemas
 class TransactionBase(BaseModel):
     date: date_type
     description: str
