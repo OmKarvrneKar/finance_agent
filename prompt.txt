@@ -1,28 +1,29 @@
-Implement ONLY Phase 2A: Authentication Foundation from PHASE2_PLAN.md.
+Implement ONLY Phase 2B: User Scoping + Database Migration.
 
-Implement:
+Tasks:
 
-* User model
-* password hashing
-* JWT creation/verification
-* get_current_user dependency
-* register/login/me endpoints
-* required auth schemas
-* JWT environment configuration
+* Add user_id foreign keys to all user-owned models.
+* Add appropriate user_id indexes.
+* Add user_id filtering to ALL CRUD queries, routers, and services.
+* Scope all AI agent tools to the authenticated user's user_id.
+* Ensure users cannot access another user's resources by changing an ID.
+* Set up Alembic migrations.
+* Safely migrate existing database data using the default-user/backfill strategy from PHASE2_PLAN.md.
+* Remove manual schema ALTER logic from main.py.
 
-Do NOT implement user_id scoping, migrations, frontend auth, or transaction features yet.
+IMPORTANT:
 
-Requirements:
+* Never accept user_id from the request body/query as the authority. Always derive it from the authenticated JWT.
+* Test cross-user access explicitly for transactions, budgets, goals, receipts, anomalies, and agent queries.
+* Back up the database before migration.
+* Verify row counts and data preservation after migration.
+* Do not implement frontend changes or transaction editing/search yet.
 
-* never log passwords or JWTs
-* validate duplicate emails
-* secure password hashing
-* JWT secret must come from environment
-* expired/invalid tokens must be rejected
-* keep existing Phase 1 functionality working
+Run the complete backend test suite and report:
 
-Add backend tests for registration, login, wrong password, invalid token, expired token, and /me.
+1. migration result
+2. data-preservation numbers
+3. cross-user isolation test results
+4. total tests passed
 
-Run the full backend test suite.
-
-Report exactly what changed and test results. Do not start Phase 2B.
+Stop after Phase 2B.

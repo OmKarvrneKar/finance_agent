@@ -35,6 +35,8 @@ def hash_password(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
+    if "sub" in to_encode:
+        to_encode["sub"] = str(to_encode["sub"])
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=JWT_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
@@ -58,8 +60,16 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     payload = decode_access_token(token)
-    user_id: int = payload.get("sub")
-    if user_id is None:
+    sub = payload.get("sub")
+    if sub is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    try:
+        user_id = int(sub)
+    except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
