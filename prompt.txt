@@ -1,138 +1,28 @@
-Phase 1 is officially complete and verified.
+Implement ONLY Phase 2A: Authentication Foundation from PHASE2_PLAN.md.
 
-Now start Phase 2, but DO NOT implement anything yet.
+Implement:
 
-Perform a comprehensive Phase 2 architecture/product audit of the current AI Finance Agent and produce an implementation plan.
+* User model
+* password hashing
+* JWT creation/verification
+* get_current_user dependency
+* register/login/me endpoints
+* required auth schemas
+* JWT environment configuration
 
-Use the current codebase as the source of truth. Do not assume features are implemented just because they were planned.
+Do NOT implement user_id scoping, migrations, frontend auth, or transaction features yet.
 
-Phase 2 should specifically investigate and prioritize the major gaps identified in the original audit:
+Requirements:
 
-1. Authentication and multi-user architecture
+* never log passwords or JWTs
+* validate duplicate emails
+* secure password hashing
+* JWT secret must come from environment
+* expired/invalid tokens must be rejected
+* keep existing Phase 1 functionality working
 
-   * User model
-   * password hashing / authentication strategy
-   * JWT/session approach
-   * authorization on every user-owned resource
-   * complete data isolation between users
-   * agent access scoped to the authenticated user
+Add backend tests for registration, login, wrong password, invalid token, expired token, and /me.
 
-2. Database architecture
+Run the full backend test suite.
 
-   * PostgreSQL readiness
-   * Alembic migrations
-   * remove startup schema mutation / manual ALTER TABLE
-   * migration from current SQLite structure
-   * proper indexes and constraints
-   * UUID/public identifiers where appropriate
-
-3. Transaction functionality
-
-   * transaction search
-   * merchant search
-   * category/date/amount filtering
-   * pagination
-   * transaction editing
-   * category correction
-   * reliable merchant-level spending queries for the AI agent
-
-4. AI Finance Agent
-
-   * audit all existing tools/function calling
-   * verify every tool is user-scoped
-   * improve merchant and date-range queries
-   * conversation history/context
-   * robust handling of ambiguous questions
-   * prevent hallucinated financial data
-   * clear error handling when data is unavailable
-
-5. Dashboard
-
-   * audit every existing dashboard component against backend capabilities
-   * identify incomplete or misleading metrics
-   * spending trends
-   * category breakdowns
-   * income vs expenses
-   * recurring expenses
-   * budgets
-   * goals
-   * forecasts
-   * anomalies
-   * useful date-range controls
-
-6. Recurring transactions
-
-   * detection
-   * management
-   * recurring expense/income tracking
-   * next expected occurrence
-   * integration with dashboard and agent
-
-7. Goals
-
-   * savings goals
-   * progress calculation
-   * target dates
-   * contribution tracking
-   * agent access
-
-8. Forecasting
-
-   * audit current linear run-rate implementation
-   * identify limitations
-   * propose a practical improvement appropriate for this project
-   * do not over-engineer
-
-9. Frontend quality
-
-   * loading/error/empty states
-   * API error handling
-   * form validation
-   * transaction editing
-   * responsive behavior
-   * frontend test strategy
-
-10. Production readiness
-
-* CORS
-* secrets/configuration
-* logging
-* rate limiting
-* security headers
-* Docker
-* deployment configuration
-* health checks
-* database connection management
-* backup/recovery considerations
-
-IMPORTANT:
-
-* First inspect the actual current implementation.
-* Do not duplicate Phase 1 work.
-* Do not make code changes.
-* Identify dependencies between tasks.
-* Identify which items must happen before others.
-* Separate MUST-HAVE from NICE-TO-HAVE.
-* Keep the architecture appropriate for a personal finance application; do not over-engineer.
-* Pay special attention to financial data security and user isolation.
-* Do not introduce unnecessary technologies.
-
-Deliver:
-
-A. Current-state findings
-B. Phase 2 priorities
-C. Recommended implementation order
-D. Detailed task-by-task implementation plan
-E. Files likely to change
-F. Database/schema changes
-G. API changes
-H. Frontend changes
-I. Testing strategy
-J. Security considerations
-K. Migration/rollback strategy
-L. Risks and tradeoffs
-M. Definition of done for Phase 2
-
-DO NOT IMPLEMENT ANYTHING.
-
-Wait for my approval after presenting the plan.
+Report exactly what changed and test results. Do not start Phase 2B.

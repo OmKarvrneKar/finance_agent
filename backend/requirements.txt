@@ -8,4 +8,6 @@ openai
 sqlalchemy
 pytesseract
 Pillow
+passlib[bcrypt]
+python-jose[cryptography]
 
