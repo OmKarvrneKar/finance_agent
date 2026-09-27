@@ -133,6 +133,8 @@ def get_transactions(
     search: str = Query(None, description="Search in description"),
     start_date: str = Query(None, description="Filter from date (YYYY-MM-DD)"),
     end_date: str = Query(None, description="Filter to date (YYYY-MM-DD)"),
+    amount_min: Decimal = Query(None, description="Minimum amount"),
+    amount_max: Decimal = Query(None, description="Maximum amount"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -142,6 +144,7 @@ def get_transactions(
             db, user_id=current_user.id, skip=skip, limit=limit,
             category=category, transaction_type=transaction_type,
             search=search, start_date=start_date, end_date=end_date,
+            amount_min=amount_min, amount_max=amount_max,
         )
     except Exception as e:
         logger.error(f"Database query error: {str(e)}")
@@ -167,7 +170,7 @@ def update_transaction_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    allowed_fields = {"category", "subcategory", "description", "amount", "transaction_type"}
+    allowed_fields = {"category", "subcategory", "description", "amount", "transaction_type", "date", "is_recurring"}
     filtered = {k: v for k, v in updates.items() if k in allowed_fields}
     if not filtered:
         raise HTTPException(status_code=400, detail="No valid fields to update.")

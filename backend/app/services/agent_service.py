@@ -27,6 +27,7 @@ def get_openrouter_client() -> OpenAI:
 # Map names to Python functions
 TOOL_MAP = {
     "filter_transactions": agent_tools.filter_transactions,
+    "search_transactions": agent_tools.search_transactions,
     "sum_by_category": agent_tools.sum_by_category,
     "compare_periods": agent_tools.compare_periods,
     "find_recurring_transactions": agent_tools.find_recurring_transactions,
@@ -68,6 +69,46 @@ TOOLS = [
                         "type": "string",
                         "enum": ["debit", "credit"],
                         "description": "Filter by transaction type: 'debit' (spending) or 'credit' (income)."
+                    }
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_transactions",
+            "description": (
+                "Search transactions by merchant name or description. Use this when the user asks about "
+                "spending at a specific store, merchant, or for a specific item. Returns matching "
+                "transactions with count and total amount spent."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "merchant": {
+                        "type": "string",
+                        "description": "Merchant name or description to search for (case-insensitive partial match)."
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Filter by category name."
+                    },
+                    "start_date": {
+                        "type": "string",
+                        "description": "Start date in YYYY-MM-DD format."
+                    },
+                    "end_date": {
+                        "type": "string",
+                        "description": "End date in YYYY-MM-DD format."
+                    },
+                    "amount_min": {
+                        "type": "number",
+                        "description": "Minimum transaction amount."
+                    },
+                    "amount_max": {
+                        "type": "number",
+                        "description": "Maximum transaction amount."
                     }
                 }
             }

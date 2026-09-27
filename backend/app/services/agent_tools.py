@@ -182,6 +182,45 @@ def get_total_spent(db: Session, user_id: int, start_date: str = None, end_date:
     result = query.scalar()
     return result if result is not None else Decimal('0.00')
 
+def search_transactions(db: Session, user_id: int, merchant: str = None, category: str = None, start_date: str = None, end_date: str = None, amount_min: float = None, amount_max: float = None, limit: int = 50) -> list:
+    query = db.query(Transaction).filter(Transaction.user_id == user_id)
+    if merchant:
+        query = query.filter(Transaction.description.ilike(f"%{merchant.strip()}%"))
+    if category:
+        query = query.filter(Transaction.category.ilike(category.strip()))
+    if start_date:
+        parsed = parse_date(start_date)
+        if parsed:
+            query = query.filter(Transaction.date >= parsed)
+    if end_date:
+        parsed = parse_date(end_date)
+        if parsed:
+            query = query.filter(Transaction.date <= parsed)
+    if amount_min is not None:
+        query = query.filter(Transaction.amount >= Decimal(str(amount_min)))
+    if amount_max is not None:
+        query = query.filter(Transaction.amount <= Decimal(str(amount_max)))
+
+    query = query.order_by(Transaction.date.desc()).limit(limit)
+    txs = query.all()
+
+    total_amount = sum(tx.amount for tx in txs)
+    return {
+        "count": len(txs),
+        "total_amount": total_amount,
+        "transactions": [
+            {
+                "id": tx.id,
+                "date": tx.date.isoformat(),
+                "description": tx.description,
+                "amount": tx.amount,
+                "transaction_type": tx.transaction_type,
+                "category": tx.category,
+            }
+            for tx in txs
+        ],
+    }
+
 def get_total_income(db: Session, user_id: int, start_date: str = None, end_date: str = None) -> Decimal:
     query = db.query(func.sum(Transaction.amount)).filter(
         Transaction.user_id == user_id,

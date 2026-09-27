@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from .db import Transaction
 from typing import List, Dict, Any, Tuple
 from decimal import Decimal
+from datetime import date, datetime
 
 def create_transactions(db: Session, transactions: List[Dict[str, Any]], user_id: int) -> Tuple[List[Transaction], int]:
     db_transactions = []
@@ -47,6 +48,8 @@ def get_transactions_paginated(
     search: str = None,
     start_date: str = None,
     end_date: str = None,
+    amount_min: Decimal = None,
+    amount_max: Decimal = None,
 ) -> Tuple[List[Transaction], int]:
     query = db.query(Transaction).filter(Transaction.user_id == user_id)
     if category:
@@ -59,6 +62,10 @@ def get_transactions_paginated(
         query = query.filter(Transaction.date >= start_date)
     if end_date:
         query = query.filter(Transaction.date <= end_date)
+    if amount_min is not None:
+        query = query.filter(Transaction.amount >= amount_min)
+    if amount_max is not None:
+        query = query.filter(Transaction.amount <= amount_max)
 
     query = query.order_by(Transaction.date.desc(), Transaction.id.desc())
     total = query.count()
@@ -83,6 +90,11 @@ def update_transaction(db: Session, transaction_id: int, user_id: int, updates: 
         return None
     for key, value in updates.items():
         if hasattr(tx, key) and value is not None:
+            if key == "date" and isinstance(value, str):
+                try:
+                    value = datetime.strptime(value, "%Y-%m-%d").date()
+                except ValueError:
+                    pass
             setattr(tx, key, value)
     db.commit()
     db.refresh(tx)
