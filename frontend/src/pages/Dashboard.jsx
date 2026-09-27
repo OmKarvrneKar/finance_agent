@@ -5,6 +5,7 @@ import SummaryCard from '../components/SummaryCard';
 import ForecastCard from '../components/ForecastCard';
 import ForecastAlerts from '../components/ForecastAlerts';
 import AnomalyAlerts from '../components/AnomalyAlerts';
+import HealthScoreCard from '../components/HealthScoreCard';
 import { ArrowDownCircle, ArrowUpCircle, Wallet, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
 
 const COLORS = ['#3B82F6', '#059669', '#D97706', '#DC2626', '#7C3AED', '#0284C7', '#C026D3', '#0D9488', '#E11D48'];
@@ -151,6 +152,11 @@ const Dashboard = () => {
 
       <AnomalyAlerts />
       <ForecastAlerts />
+
+      {/* Health Score */}
+      <div style={{ marginBottom: '24px' }}>
+        <HealthScoreCard />
+      </div>
 
       {/* Forecast Card */}
       {!useCustom && preset === 'this_month' && (

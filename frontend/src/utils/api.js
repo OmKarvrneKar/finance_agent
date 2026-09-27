@@ -133,6 +133,12 @@ export const getImprovedForecast = async (month = '', category = '') => {
   return response.data;
 };
 
+// Health Score
+export const getHealthScore = async () => {
+  const response = await api.get('/health');
+  return response.data;
+};
+
 // Budgets
 export const getBudgets = async (month = '') => {
   const params = month ? `?month=${month}` : '';
