@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.database.db import Base, get_db
-from app.dependencies import _rate_store, WINDOW_SECONDS, MAX_REQUESTS_PER_WINDOW
+from app.dependencies import _rate_store, WINDOW_SECONDS, AGENT_MAX_REQUESTS
 
 engine = create_engine(
     'sqlite:///:memory:',
@@ -63,7 +63,7 @@ def test_agent_endpoint_accepts_normal_requests(client, auth_headers):
     assert response.status_code in [200, 500, 503]
 
 def test_agent_endpoint_blocks_after_max_requests(client, auth_headers):
-    for _ in range(MAX_REQUESTS_PER_WINDOW):
+    for _ in range(AGENT_MAX_REQUESTS):
         client.post("/api/agent/ask", json={"question": "test"}, headers=auth_headers)
 
     response = client.post("/api/agent/ask", json={"question": "test"}, headers=auth_headers)
@@ -71,18 +71,20 @@ def test_agent_endpoint_blocks_after_max_requests(client, auth_headers):
     assert "Rate limit" in response.json()["detail"]
 
 def test_rate_limit_resets_after_window(client, auth_headers):
-    _rate_store["127.0.0.1"] = [time.time() - WINDOW_SECONDS - 1]
+    key = "127.0.0.1:10"
+    _rate_store[key] = {"127.0.0.1": [time.time() - WINDOW_SECONDS - 1]}
 
     response = client.post("/api/agent/ask", json={"question": "test"}, headers=auth_headers)
     assert response.status_code in [200, 500, 503]
 
 def test_rate_limit_cleans_old_entries(client, auth_headers):
-    _rate_store["127.0.0.1"] = [time.time() - WINDOW_SECONDS - 10] * 20
+    key = "127.0.0.1:10"
+    _rate_store[key] = {"127.0.0.1": [time.time() - WINDOW_SECONDS - 10] * 20}
 
     response = client.post("/api/agent/ask", json={"question": "test"}, headers=auth_headers)
     assert response.status_code in [200, 500, 503]
 
 def test_non_agent_endpoints_not_rate_limited(client, auth_headers):
-    for _ in range(MAX_REQUESTS_PER_WINDOW + 5):
+    for _ in range(AGENT_MAX_REQUESTS + 5):
         response = client.get("/api/transactions", headers=auth_headers)
         assert response.status_code != 429

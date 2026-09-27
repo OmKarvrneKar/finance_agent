@@ -1,10 +1,17 @@
+import os
+import logging
+import traceback
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from app.database.db import engine, Base
 from app.routers import transactions, agent, auth, goals
+
+logger = logging.getLogger(__name__)
 
 # Initialize tables on startup
 Base.metadata.create_all(bind=engine)
@@ -15,9 +22,47 @@ app = FastAPI(
     version="1.0.0"
 )
 
-import os
+# --- Security Headers Middleware ---
 
-# CORS setup
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self'; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'"
+        )
+        if os.getenv("ENVIRONMENT", "development").lower() == "production":
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=63072000; includeSubDomains; preload"
+            )
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+# --- Global Exception Handler ---
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {type(exc).__name__}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred. Please try again later."},
+    )
+
+
+# --- CORS Setup ---
+
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
     os.getenv("FRONTEND_URL", ""),
