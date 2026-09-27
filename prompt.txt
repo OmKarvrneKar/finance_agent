@@ -1,59 +1,54 @@
-Implement ONLY Phase 2C: Transaction Management.
+Implement ONLY Phase 2D: Frontend Authentication + Transaction Management UI.
 
-Add:
+Implement:
 
-1. Transaction update endpoint
+1. Authentication UI
 
-   * Allow editing category, description, date, amount, and other safe editable fields.
-   * Always enforce authenticated user's ownership.
+* Login page
+* Registration page
+* Store authentication state safely for the current architecture
+* Logout
+* Redirect unauthenticated users to login
+* Handle expired/invalid JWT cleanly
 
-2. Transaction delete endpoint
+2. Transaction management UI
 
-   * Delete only transactions belonging to the authenticated user.
-   * Prevent ID-based access to another user's transaction.
+* Transaction search
+* Merchant/description search
+* Category filter
+* Date-range filter
+* Amount filter
+* Pagination
+* Edit transaction
+* Delete transaction
+* Loading, empty, and error states
 
-3. Transaction search
+3. Connect to the existing Phase 2C APIs.
 
-   * Search by description/merchant.
-   * Support category filtering.
-   * Support date-range filtering.
-   * Support amount filtering if practical.
-   * Add pagination.
+* Do not duplicate backend logic in the frontend.
+* Handle 401/403 responses correctly.
 
-4. Dynamic categories
+4. Tests
 
-   * Remove hardcoded category assumptions where appropriate.
-   * Keep existing categories/data compatible.
-
-5. AI agent integration
-
-   * Add a properly user-scoped merchant/transaction search tool.
-   * It must query the database rather than having the LLM calculate financial totals itself.
-   * Verify questions such as "How much did I spend at Starbucks?" can be answered from actual transaction data.
-
-6. Tests
-
-   * CRUD/update/delete tests.
-   * Search/filter tests.
-   * Pagination tests.
-   * Cross-user authorization tests.
-   * Agent merchant-search tests.
-   * Regression test existing functionality.
+* Add frontend tests for login/register/logout
+* Protected route behavior
+* Transaction search/filter
+* Edit/delete
+* API error states
 
 IMPORTANT:
 
-* Use the authenticated JWT user_id. Never trust user_id from the client.
-* Keep Decimal for all monetary calculations.
-* Do not modify authentication or Alembic architecture.
-* Do not start frontend work yet.
-* Do not implement Phase 2D or other features.
+* Do not change backend authentication architecture.
+* Do not change database schema.
+* Do not implement dashboard redesign, notifications, goals, forecasting, or other Phase 2 features yet.
+* Keep the existing dashboard functionality working.
 
-Run the full backend test suite.
+Run backend and frontend tests.
 
-STOP after Phase 2C and report:
+STOP after Phase 2D and report:
 
 * files changed
-* API endpoints added/changed
-* tests added
-* total tests passed
-* any limitations or remaining issues
+* frontend tests added
+* backend tests still passing
+* total test results
+* any known issues
