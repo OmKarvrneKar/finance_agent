@@ -41,6 +41,10 @@ const Navigation = () => {
                 <Target size={18} />
                 <span>Budgets</span>
               </NavLink>
+              <NavLink to="/goals" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+                <Target size={18} />
+                <span>Goals</span>
+              </NavLink>
             </div>
             <button onClick={logout} className="nav-link logout-btn" style={{ cursor: 'pointer', background: 'none', border: 'none' }}>
               <LogOut size={18} />

@@ -11,6 +11,7 @@ import AskAI from './pages/AskAI';
 import Dashboard from './pages/Dashboard';
 import Subscriptions from './pages/Subscriptions';
 import BudgetsPage from './pages/BudgetsPage';
+import Goals from './pages/Goals';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
               <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/budgets" element={<ProtectedRoute><BudgetsPage /></ProtectedRoute>} />
+              <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
             </Routes>
           </main>
           <footer style={{ textAlign: 'center', padding: '1rem', marginTop: 'auto', opacity: 0.7 }}>

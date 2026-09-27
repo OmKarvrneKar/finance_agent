@@ -33,6 +33,7 @@ TOOL_MAP = {
     "find_recurring_transactions": agent_tools.find_recurring_transactions,
     "get_total_spent": agent_tools.get_total_spent,
     "get_total_income": agent_tools.get_total_income,
+    "get_savings_goals": agent_tools.get_savings_goals,
     "forecast_month_end_spend": forecasting.forecast_month_end_spend,
     "generate_overspend_alerts": forecasting.generate_overspend_alerts,
     "get_budget_status": budgets.get_budget_status,
@@ -297,6 +298,23 @@ TOOLS = [
                     }
                 },
                 "required": ["category", "percent_change"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_savings_goals",
+            "description": "Retrieve the user's savings goals with progress information including current amount saved, target amount, progress percentage, and status.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Optional filter by status: 'active', 'completed', or 'abandoned'. If omitted, returns all goals."
+                    }
+                },
+                "required": []
             }
         }
     },

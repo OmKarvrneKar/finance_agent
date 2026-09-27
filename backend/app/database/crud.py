@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from .db import Transaction
+from .db import Transaction, SavingsGoal
 from typing import List, Dict, Any, Tuple, Optional
 from decimal import Decimal
 from datetime import date, datetime
@@ -210,4 +210,104 @@ def get_analytics_summary(
         "transaction_count": len(txs),
         "category_breakdown": category_breakdown,
         "spending_trend": spending_trend,
+    }
+
+
+# --- Savings Goal CRUD ---
+
+def create_savings_goal(db: Session, user_id: int, name: str, target_amount: Decimal,
+                        target_date=None, description=None) -> SavingsGoal:
+    goal = SavingsGoal(
+        user_id=user_id,
+        name=name,
+        target_amount=target_amount,
+        current_amount=Decimal('0'),
+        target_date=target_date,
+        description=description,
+        status='active',
+    )
+    db.add(goal)
+    db.commit()
+    db.refresh(goal)
+    return goal
+
+
+def get_savings_goals(db: Session, user_id: int, status: str = None) -> List[SavingsGoal]:
+    query = db.query(SavingsGoal).filter(SavingsGoal.user_id == user_id)
+    if status:
+        query = query.filter(SavingsGoal.status == status)
+    return query.order_by(SavingsGoal.created_at.desc()).all()
+
+
+def get_savings_goal(db: Session, goal_id: int, user_id: int) -> Optional[SavingsGoal]:
+    return db.query(SavingsGoal).filter(
+        SavingsGoal.id == goal_id,
+        SavingsGoal.user_id == user_id,
+    ).first()
+
+
+def update_savings_goal(db: Session, goal_id: int, user_id: int, updates: Dict[str, Any]) -> Optional[SavingsGoal]:
+    goal = db.query(SavingsGoal).filter(
+        SavingsGoal.id == goal_id,
+        SavingsGoal.user_id == user_id,
+    ).first()
+    if not goal:
+        return None
+    for key, value in updates.items():
+        if hasattr(goal, key) and value is not None:
+            if key == "target_date" and isinstance(value, str):
+                try:
+                    value = datetime.strptime(value, "%Y-%m-%d").date()
+                except ValueError:
+                    pass
+            setattr(goal, key, value)
+    if goal.current_amount >= goal.target_amount and goal.status == 'active':
+        goal.status = 'completed'
+    db.commit()
+    db.refresh(goal)
+    return goal
+
+
+def delete_savings_goal(db: Session, goal_id: int, user_id: int) -> bool:
+    goal = db.query(SavingsGoal).filter(
+        SavingsGoal.id == goal_id,
+        SavingsGoal.user_id == user_id,
+    ).first()
+    if not goal:
+        return False
+    db.delete(goal)
+    db.commit()
+    return True
+
+
+def contribute_to_savings_goal(db: Session, goal_id: int, user_id: int, amount: Decimal) -> Optional[SavingsGoal]:
+    if amount <= 0:
+        return None
+    goal = db.query(SavingsGoal).filter(
+        SavingsGoal.id == goal_id,
+        SavingsGoal.user_id == user_id,
+    ).first()
+    if not goal:
+        return None
+    goal.current_amount = (goal.current_amount or Decimal('0')) + amount
+    if goal.current_amount >= goal.target_amount:
+        goal.status = 'completed'
+    db.commit()
+    db.refresh(goal)
+    return goal
+
+
+def get_savings_goals_summary(db: Session, user_id: int) -> Dict[str, Any]:
+    goals = db.query(SavingsGoal).filter(SavingsGoal.user_id == user_id).all()
+    active = [g for g in goals if g.status == 'active']
+    completed = [g for g in goals if g.status == 'completed']
+    total_target = sum((g.target_amount or Decimal('0')) for g in goals)
+    total_saved = sum((g.current_amount or Decimal('0')) for g in goals)
+    return {
+        "total_goals": len(goals),
+        "active_goals": len(active),
+        "completed_goals": len(completed),
+        "total_target": total_target,
+        "total_saved": total_saved,
+        "overall_progress": float(total_saved / total_target * 100) if total_target > 0 else 0,
     }

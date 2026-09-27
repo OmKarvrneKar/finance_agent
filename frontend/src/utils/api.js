@@ -142,13 +142,39 @@ export const deleteBudget = async (category) => {
 };
 
 // Goals
-export const getSavingsGoals = async () => {
-  const response = await api.get('/goals');
+export const getSavingsGoals = async (status = null) => {
+  const params = status ? { status } : {};
+  const response = await api.get('/goals', { params });
+  return response.data;
+};
+
+export const getSavingsGoal = async (id) => {
+  const response = await api.get(`/goals/${id}`);
   return response.data;
 };
 
 export const createSavingsGoal = async (goal) => {
   const response = await api.post('/goals', goal);
+  return response.data;
+};
+
+export const updateSavingsGoal = async (id, updates) => {
+  const response = await api.put(`/goals/${id}`, updates);
+  return response.data;
+};
+
+export const deleteSavingsGoal = async (id) => {
+  const response = await api.delete(`/goals/${id}`);
+  return response.data;
+};
+
+export const contributeToGoal = async (id, amount) => {
+  const response = await api.post(`/goals/${id}/contribute`, { amount });
+  return response.data;
+};
+
+export const getGoalsSummary = async () => {
+  const response = await api.get('/goals/summary');
   return response.data;
 };
 

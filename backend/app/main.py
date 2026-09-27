@@ -4,7 +4,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.db import engine, Base
-from app.routers import transactions, agent, auth
+from app.routers import transactions, agent, auth, goals
 
 # Initialize tables on startup
 Base.metadata.create_all(bind=engine)
@@ -42,6 +42,7 @@ app.include_router(budgets.router, prefix="/api", tags=["budgets"])
 app.include_router(receipts.router, prefix="/api", tags=["receipts"])
 app.include_router(anomalies.router, prefix="/api", tags=["anomalies"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(goals.router, prefix="/api", tags=["goals"])
 
 @app.get("/")
 def read_root():

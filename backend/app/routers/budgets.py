@@ -62,30 +62,6 @@ def delete_budget(
     db.commit()
     return {"message": "Budget goal removed."}
 
-@router.post("/goals", response_model=schemas.SavingsGoalResponse)
-def create_savings_goal(
-    goal_in: schemas.SavingsGoalCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    goal = SavingsGoal(
-        user_id=current_user.id,
-        name=goal_in.name,
-        target_amount=goal_in.target_amount,
-        target_date=goal_in.target_date
-    )
-    db.add(goal)
-    db.commit()
-    db.refresh(goal)
-    return goal
-
-@router.get("/goals", response_model=List[schemas.SavingsGoalResponse])
-def get_savings_goals(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return db.query(SavingsGoal).filter(SavingsGoal.user_id == current_user.id).all()
-
 @router.post("/simulate")
 def simulate_budget_change(
     sim_in: schemas.SimulateRequest,

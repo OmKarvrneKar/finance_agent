@@ -2,7 +2,7 @@ import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from app.database.db import Transaction
+from app.database.db import Transaction, SavingsGoal
 
 def parse_date(date_str: str):
     if not date_str:
@@ -237,3 +237,27 @@ def get_total_income(db: Session, user_id: int, start_date: str = None, end_date
             
     result = query.scalar()
     return result if result is not None else Decimal('0.00')
+
+def get_savings_goals(db: Session, user_id: int, status: str = None) -> list:
+    query = db.query(SavingsGoal).filter(SavingsGoal.user_id == user_id)
+    if status:
+        query = query.filter(SavingsGoal.status == status)
+    goals = query.order_by(SavingsGoal.created_at.desc()).all()
+    result = []
+    for g in goals:
+        current = g.current_amount or Decimal('0')
+        target = g.target_amount or Decimal('1')
+        progress = float(current / target * 100) if target > 0 else 0
+        progress = min(progress, 100.0)
+        result.append({
+            "id": g.id,
+            "name": g.name,
+            "description": g.description,
+            "target_amount": g.target_amount,
+            "current_amount": g.current_amount,
+            "target_date": g.target_date.isoformat() if g.target_date else None,
+            "status": g.status,
+            "progress_percent": round(progress, 2),
+            "created_at": g.created_at.isoformat() if g.created_at else None,
+        })
+    return result

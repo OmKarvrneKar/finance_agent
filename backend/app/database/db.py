@@ -58,9 +58,13 @@ class SavingsGoal(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String, index=True, nullable=False)
+    description = Column(String, nullable=True)
     target_amount = Column(Numeric(12, 2), nullable=False)
+    current_amount = Column(Numeric(12, 2), nullable=False, default=0)
     target_date = Column(Date, nullable=True)
+    status = Column(String, nullable=False, default="active")  # active | completed | abandoned
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 class PendingReceipt(Base):
     __tablename__ = "pending_receipts"

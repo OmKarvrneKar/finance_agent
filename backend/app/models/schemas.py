@@ -82,16 +82,41 @@ class SavingsGoalCreate(BaseModel):
     name: str
     target_amount: Decimal
     target_date: Optional[date_type] = None
+    description: Optional[str] = None
+
+class SavingsGoalUpdate(BaseModel):
+    name: Optional[str] = None
+    target_amount: Optional[Decimal] = None
+    target_date: Optional[date_type] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+
+class SavingsGoalContribution(BaseModel):
+    amount: Decimal
 
 class SavingsGoalResponse(BaseModel):
     id: int
     name: str
+    description: Optional[str] = None
     target_amount: Decimal
+    current_amount: Decimal
     target_date: Optional[date_type] = None
+    status: str
+    progress_percent: float = 0
+    projected_completion: Optional[str] = None
     created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True
+
+class SavingsGoalsSummaryResponse(BaseModel):
+    total_goals: int
+    active_goals: int
+    completed_goals: int
+    total_target: Decimal
+    total_saved: Decimal
+    overall_progress: float
 
 class BudgetStatusResponse(BaseModel):
     category: str
