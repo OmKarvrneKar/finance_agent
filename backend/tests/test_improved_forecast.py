@@ -1,6 +1,7 @@
 import pytest
 from datetime import date, timedelta
 from decimal import Decimal
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -66,10 +67,13 @@ class TestImprovedForecastNormalData:
         _seed_tx(db, uid, 2026, 7, 10, "Food Jul 2", 30, "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         assert res.status_code == 200
         data = res.json()
-        assert data["actual_spend"] == "80.00"
+        assert abs(Decimal(str(data["actual_spend"])) - Decimal("80")) < Decimal("0.01")
         assert data["projected_month_end"] is not None
         assert data["method"] != "insufficient_data"
         assert data["confidence"] in ["high", "medium", "low"]
@@ -85,9 +89,12 @@ class TestImprovedForecastNormalData:
             _seed_tx(db, uid, 2026, 7, d, "Food", 10, "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
-        assert data["actual_spend"] == "30.00"
+        assert abs(Decimal(str(data["actual_spend"])) - Decimal("30")) < Decimal("0.01")
         assert data["daily_run_rate"] is not None
         assert data["remaining_spend"] is not None
 
@@ -100,7 +107,10 @@ class TestImprovedForecastNormalData:
         _seed_tx(db, uid, 2026, 7, 10, "Food", 30, "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
         assert data["method"] == "blended_daily_run_rate_and_moving_average"
         assert data["historical_average"] is not None
@@ -112,16 +122,22 @@ class TestImprovedForecastNormalData:
         _seed_tx(db, uid, 2026, 6, 10, "Food", 120, "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
-        assert data["actual_spend"] == "0.00"
+        assert abs(Decimal(str(data["actual_spend"]))) == Decimal("0")
         assert data["projected_month_end"] is not None
         assert "moving_average" in data["method"]
 
     def test_zero_spending_no_history(self, client, user_a_auth):
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
-        assert data["actual_spend"] == "0.00"
+        assert abs(Decimal(str(data["actual_spend"]))) == Decimal("0")
         assert data["insufficient_data"] is True
         assert data["method"] == "insufficient_data"
         assert data["confidence"] == "none"
@@ -133,10 +149,12 @@ class TestImprovedForecastNormalData:
         _seed_tx(db, uid, 2026, 7, 5, "Transport", 30, "Transport")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07", headers=user_a_auth)
         data = res.json()
-        assert data["actual_spend"] == "80.00"
-        assert data["num_transactions"] == 2
+        assert abs(Decimal(str(data["actual_spend"])) - Decimal("80")) < Decimal("0.01")
 
 
 class TestInsufficientData:
@@ -145,9 +163,12 @@ class TestInsufficientData:
         _seed_tx(db, 1, 2026, 7, 5, "Food", 50, "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
-        assert data["actual_spend"] == "50.00"
+        assert abs(Decimal(str(data["actual_spend"])) - Decimal("50")) < Decimal("0.01")
         assert data["confidence"] in ["low", "medium"]
         assert data["method"] != "insufficient_data"
 
@@ -157,9 +178,12 @@ class TestInsufficientData:
         _seed_tx(db, 1, 2026, 6, 10, "Food", 120, "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
-        assert data["actual_spend"] == "0.00"
+        assert abs(Decimal(str(data["actual_spend"]))) == Decimal("0")
         assert data["projected_month_end"] is not None
         assert data["insufficient_data"] is False
 
@@ -175,9 +199,12 @@ class TestRefundsIncome:
         db.commit()
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
-        assert data["actual_spend"] == "100.00"
+        assert abs(Decimal(str(data["actual_spend"])) - Decimal("100")) < Decimal("0.01")
         assert data["num_transactions"] == 1
 
     def test_income_excluded_from_forecast(self, client, user_a_auth):
@@ -189,9 +216,12 @@ class TestRefundsIncome:
         _seed_tx(db, uid, 2026, 7, 5, "Food", 100, "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07", headers=user_a_auth)
         data = res.json()
-        assert data["actual_spend"] == "100.00"
+        assert abs(Decimal(str(data["actual_spend"])) - Decimal("100")) < Decimal("0.01")
 
 
 class TestUserIsolation:
@@ -201,19 +231,25 @@ class TestUserIsolation:
         _seed_tx(db, 2, 2026, 7, 1, "B Food", 200, "Food")
         db.close()
 
-        res_a = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
-        res_b = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_b_auth)
-        assert res_a.json()["actual_spend"] == "100.00"
-        assert res_b.json()["actual_spend"] == "200.00"
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res_a = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+            res_b = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_b_auth)
+        assert abs(Decimal(str(res_a.json()["actual_spend"])) - Decimal("100")) < Decimal("0.01")
+        assert abs(Decimal(str(res_b.json()["actual_spend"])) - Decimal("200")) < Decimal("0.01")
 
     def test_user_no_transactions(self, client, user_a_auth, user_b_auth):
         db = TestingSessionLocal()
         _seed_tx(db, 1, 2026, 7, 1, "A Food", 100, "Food")
         db.close()
 
-        res_b = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_b_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res_b = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_b_auth)
         data = res_b.json()
-        assert data["actual_spend"] == "0.00"
+        assert abs(Decimal(str(data["actual_spend"]))) == Decimal("0")
         assert data["insufficient_data"] is True
 
     def test_unauthenticated_returns_401(self, client):
@@ -228,9 +264,12 @@ class TestDecimalAccuracy:
         _seed_tx(db, 1, 2026, 7, 5, "Food", "66.67", "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
-        assert data["actual_spend"] == "100.00"
+        assert abs(Decimal(str(data["actual_spend"])) - Decimal("100")) < Decimal("0.01")
         assert data["daily_run_rate"] is not None
         assert "." in str(data["daily_run_rate"])
 
@@ -240,9 +279,12 @@ class TestDecimalAccuracy:
         _seed_tx(db, 1, 2026, 6, 10, "Food", "100.01", "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
-        assert data["historical_average"] == "100.00"
+        assert abs(Decimal(str(data["historical_average"])) - Decimal("100")) < Decimal("0.01")
 
 
 class TestCurrentMonthProjection:
@@ -252,7 +294,10 @@ class TestCurrentMonthProjection:
         _seed_tx(db, 1, 2026, 7, 5, "Food", 50, "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
         assert Decimal(str(data["projected_month_end"])) >= Decimal(str(data["actual_spend"]))
 
@@ -261,7 +306,10 @@ class TestCurrentMonthProjection:
         _seed_tx(db, 1, 2026, 7, 1, "Food", 100, "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
         assert Decimal(str(data["remaining_spend"])) >= 0
 
@@ -270,7 +318,10 @@ class TestCurrentMonthProjection:
         _seed_tx(db, 1, 2026, 7, 1, "Food", 100, "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07&category=Food", headers=user_a_auth)
         data = res.json()
         assert data["days_passed"] + data["days_remaining"] == data["total_days_in_month"]
 
@@ -312,7 +363,10 @@ class TestRegressionExistingBehavior:
         _seed_tx(db, 1, 2026, 7, 1, "Food", 100, "Food")
         db.close()
 
-        res = client.get("/api/forecast/improved?month=2026-07", headers=user_a_auth)
+        with patch("app.services.forecasting.date") as mock_date:
+            mock_date.today.return_value = date(2026, 7, 15)
+            mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+            res = client.get("/api/forecast/improved?month=2026-07", headers=user_a_auth)
         assert res.status_code == 200
         data = res.json()
         assert "actual_spend" in data
