@@ -36,6 +36,7 @@ class Transaction(Base):
     category = Column(String, nullable=False)
     subcategory = Column(String, nullable=True)
     is_recurring = Column(Boolean, default=False, nullable=False)
+    is_user_confirmed_recurring = Column(Boolean, default=False, nullable=False)
     raw_text = Column(String, nullable=True)
     source = Column(String, default="bank_statement", nullable=False)
     receipt_image_path = Column(String, nullable=True)

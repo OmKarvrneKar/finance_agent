@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchSubscriptions } from '../utils/api';
 import CategoryBadge from '../components/CategoryBadge';
-import { Repeat, Calendar, DollarSign, Activity } from 'lucide-react';
+import { Repeat, Calendar, DollarSign, Activity, CheckCircle, Bot } from 'lucide-react';
 import SummaryCard from '../components/SummaryCard';
 
 const Subscriptions = () => {
@@ -58,6 +58,20 @@ const Subscriptions = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <h3 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 600, color: 'var(--text-main)' }}>{sub.description}</h3>
                 <CategoryBadge category={sub.category} />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}>
+                {sub.is_user_confirmed ? (
+                  <>
+                    <CheckCircle size={14} style={{ color: 'var(--credit-text)' }} />
+                    <span style={{ color: 'var(--credit-text)', fontWeight: 500 }}>User confirmed</span>
+                  </>
+                ) : (
+                  <>
+                    <Bot size={14} style={{ color: 'var(--text-muted)' }} />
+                    <span style={{ color: 'var(--text-muted)' }}>AI detected</span>
+                  </>
+                )}
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', backgroundColor: 'var(--bg-secondary)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>

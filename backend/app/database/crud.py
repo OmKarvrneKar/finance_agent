@@ -113,6 +113,42 @@ def delete_transaction(db: Session, transaction_id: int, user_id: int) -> bool:
     return True
 
 
+def get_recurring_transactions(db: Session, user_id: int) -> List[Transaction]:
+    return db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.is_recurring == True,
+        Transaction.transaction_type == 'debit'
+    ).order_by(Transaction.date.desc()).all()
+
+
+def mark_recurring(db: Session, transaction_id: int, user_id: int) -> Transaction:
+    tx = db.query(Transaction).filter(
+        Transaction.id == transaction_id,
+        Transaction.user_id == user_id,
+    ).first()
+    if not tx:
+        return None
+    tx.is_recurring = True
+    tx.is_user_confirmed_recurring = True
+    db.commit()
+    db.refresh(tx)
+    return tx
+
+
+def unmark_recurring(db: Session, transaction_id: int, user_id: int) -> Transaction:
+    tx = db.query(Transaction).filter(
+        Transaction.id == transaction_id,
+        Transaction.user_id == user_id,
+    ).first()
+    if not tx:
+        return None
+    tx.is_recurring = False
+    tx.is_user_confirmed_recurring = False
+    db.commit()
+    db.refresh(tx)
+    return tx
+
+
 def get_analytics_summary(
     db: Session,
     user_id: int,

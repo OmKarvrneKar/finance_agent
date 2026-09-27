@@ -36,6 +36,7 @@ class TransactionBase(BaseModel):
     category: str
     subcategory: Optional[str] = None
     is_recurring: bool = False
+    is_user_confirmed_recurring: bool = False
     raw_text: Optional[str] = None
 
 class TransactionCreate(TransactionBase):
@@ -142,3 +143,14 @@ class AnomalyResponse(BaseModel):
     gap_hours: Optional[int] = None
     user_avg_amount: Optional[Decimal] = None
     user_std_dev: Optional[Decimal] = None
+
+class SubscriptionResponse(BaseModel):
+    description: str
+    category: str
+    occurrences: int
+    average_amount: Decimal
+    frequency: str
+    estimated_monthly_cost: Decimal
+    estimated_annual_cost: Decimal
+    last_seen: str
+    is_user_confirmed: bool = False

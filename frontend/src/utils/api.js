@@ -208,3 +208,19 @@ export const confirmAnomaly = async (id) => {
   const response = await api.post(`/anomalies/${id}/confirm`);
   return response.data;
 };
+
+// Subscriptions / Recurring
+export const fetchSubscriptions = async () => {
+  const response = await api.get('/subscriptions');
+  return response.data;
+};
+
+export const markRecurring = async (transactionId) => {
+  const response = await api.post(`/transactions/${transactionId}/recurring`);
+  return response.data;
+};
+
+export const unmarkRecurring = async (transactionId) => {
+  const response = await api.delete(`/transactions/${transactionId}/recurring`);
+  return response.data;
+};

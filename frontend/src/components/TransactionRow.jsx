@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import CategoryBadge from './CategoryBadge';
 import { Repeat, Pencil, Trash2 } from 'lucide-react';
+import { markRecurring, unmarkRecurring } from '../utils/api';
 
 const TransactionRow = ({ transaction, onEdit, onDelete, isDeleting }) => {
+  const [toggling, setToggling] = useState(false);
   const isDebit = transaction.transaction_type === 'debit';
   const amountClass = isDebit ? 'amount-debit' : 'amount-credit';
   const amountPrefix = isDebit ? '-' : '+';
@@ -11,6 +13,27 @@ const TransactionRow = ({ transaction, onEdit, onDelete, isDeleting }) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
+
+  const handleToggleRecurring = async () => {
+    setToggling(true);
+    try {
+      if (transaction.is_recurring) {
+        await unmarkRecurring(transaction.id);
+        transaction.is_recurring = false;
+        transaction.is_user_confirmed_recurring = false;
+      } else {
+        await markRecurring(transaction.id);
+        transaction.is_recurring = true;
+        transaction.is_user_confirmed_recurring = true;
+      }
+    } catch (err) {
+      console.error('Failed to toggle recurring status', err);
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  const recurringSource = transaction.is_user_confirmed_recurring ? 'User confirmed' : 'AI detected';
 
   return (
     <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
@@ -44,9 +67,21 @@ const TransactionRow = ({ transaction, onEdit, onDelete, isDeleting }) => {
       </td>
       <td style={{ textAlign: 'center', padding: '14px 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-          {transaction.is_recurring && (
-            <Repeat size={14} title="Recurring" style={{ color: 'var(--primary-blue)', opacity: 0.5 }} />
-          )}
+          <button
+            onClick={handleToggleRecurring}
+            disabled={toggling}
+            title={transaction.is_recurring ? `Recurring (${recurringSource}) - Click to unmark` : 'Mark as recurring'}
+            style={{
+              background: 'none', border: 'none', cursor: toggling ? 'not-allowed' : 'pointer',
+              padding: '4px', borderRadius: '4px',
+              color: transaction.is_recurring ? 'var(--primary-blue)' : 'var(--text-muted)',
+              opacity: toggling ? 0.5 : 1,
+            }}
+            onMouseOver={(e) => !toggling && (e.currentTarget.style.color = 'var(--accent-color)')}
+            onMouseOut={(e) => e.currentTarget.style.color = transaction.is_recurring ? 'var(--primary-blue)' : 'var(--text-muted)'}
+          >
+            <Repeat size={14} />
+          </button>
           {onEdit && (
             <button onClick={onEdit} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '4px', color: 'var(--text-muted)' }}
               onMouseOver={(e) => e.currentTarget.style.color = 'var(--accent-color)'}

@@ -8,7 +8,7 @@ from app.database.db import get_db, User
 from app.database import crud
 from app.services.csv_parser import parse_bank_csv
 from app.services.categorizer import categorize_transactions
-from app.models.schemas import UploadSummaryResponse, PaginatedTransactionsResponse
+from app.models.schemas import UploadSummaryResponse, PaginatedTransactionsResponse, SubscriptionResponse
 from app.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -199,7 +199,7 @@ def get_categories(
     categories = crud.get_distinct_categories(db, current_user.id)
     return {"categories": categories}
 
-@router.get("/subscriptions")
+@router.get("/subscriptions", response_model=List[SubscriptionResponse])
 def get_subscriptions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -262,16 +262,43 @@ def get_subscriptions(
             frequency = "Yearly"
             monthly_cost = avg_amount / Decimal('12.0')
 
-        results.append({
-            "description": txs[0].description,
-            "category": txs[0].category,
-            "occurrences": occurrences,
-            "average_amount": avg_amount,
-            "frequency": frequency,
-            "estimated_monthly_cost": monthly_cost,
-            "estimated_annual_cost": monthly_cost * Decimal('12'),
-            "last_seen": sorted_dates[-1].isoformat() if sorted_dates else "Unknown"
-        })
+        is_user_confirmed = any(tx.is_user_confirmed_recurring for tx in txs)
 
-    results.sort(key=lambda x: x["estimated_monthly_cost"], reverse=True)
+        results.append(SubscriptionResponse(
+            description=txs[0].description,
+            category=txs[0].category,
+            occurrences=occurrences,
+            average_amount=avg_amount,
+            frequency=frequency,
+            estimated_monthly_cost=monthly_cost,
+            estimated_annual_cost=monthly_cost * Decimal('12'),
+            last_seen=sorted_dates[-1].isoformat() if sorted_dates else "Unknown",
+            is_user_confirmed=is_user_confirmed,
+        ))
+
+    results.sort(key=lambda x: x.estimated_monthly_cost, reverse=True)
     return results
+
+
+@router.post("/transactions/{transaction_id}/recurring")
+def mark_transaction_recurring(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tx = crud.mark_recurring(db, transaction_id, current_user.id)
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found.")
+    return {"message": "Transaction marked as recurring.", "is_recurring": tx.is_recurring, "is_user_confirmed_recurring": tx.is_user_confirmed_recurring}
+
+
+@router.delete("/transactions/{transaction_id}/recurring")
+def unmark_transaction_recurring(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tx = crud.unmark_recurring(db, transaction_id, current_user.id)
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found.")
+    return {"message": "Transaction unmarked as recurring.", "is_recurring": tx.is_recurring, "is_user_confirmed_recurring": tx.is_user_confirmed_recurring}
