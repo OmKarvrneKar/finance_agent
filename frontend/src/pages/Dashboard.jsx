@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LineChart, Line } from 'recharts';
 import { getAnalyticsSummary } from '../utils/api';
 import SummaryCard from '../components/SummaryCard';
+import ForecastCard from '../components/ForecastCard';
 import ForecastAlerts from '../components/ForecastAlerts';
 import AnomalyAlerts from '../components/AnomalyAlerts';
 import { ArrowDownCircle, ArrowUpCircle, Wallet, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
@@ -150,6 +151,13 @@ const Dashboard = () => {
 
       <AnomalyAlerts />
       <ForecastAlerts />
+
+      {/* Forecast Card */}
+      {!useCustom && preset === 'this_month' && (
+        <div style={{ marginBottom: '24px' }}>
+          <ForecastCard />
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>

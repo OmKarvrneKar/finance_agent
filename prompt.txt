@@ -1,54 +1,55 @@
-Implement ONLY Phase 2E-C: Savings Goals & Goal Tracking.
+Implement ONLY Phase 2E-D: Improved Spending Forecasting.
 
-Backend:
+First inspect the existing forecasting implementation.
 
-* Create goal CRUD endpoints.
-* Fields: name, target_amount, current_amount, target_date, description/status as appropriate.
-* All monetary values must remain Decimal.
-* Scope every goal to the authenticated user.
-* Add contribution/update-progress functionality.
-* Calculate progress percentage.
-* Calculate projected completion date when enough contribution history/data exists.
-* Validate invalid amounts, dates, and ownership.
+Improve it to support:
+
+* Historical spending trend using available transaction history.
+* Moving-average based forecasting where enough historical data exists.
+* Current month projected total.
+* Remaining-days projection.
+* Clearly distinguish actual spending from forecasted spending.
+* Handle months with insufficient historical data gracefully.
+* Keep all monetary calculations as Decimal.
+* Scope all transaction data to the authenticated user.
+* Avoid double-counting refunds/income incorrectly.
+* Explain the forecast method in the API response so the UI can show how the number was calculated.
 
 Frontend:
 
-* Goals page.
-* Create/edit/delete goal.
-* Progress bars/cards.
-* Update contribution/progress.
-* Show target date and projected completion when available.
-* Loading, empty, and error states.
+* Update the existing forecast/dashboard UI to show:
 
-AI:
-
-* Add a user-scoped goal query/tool so the finance agent can answer questions about the user's savings goals.
+  * actual spent
+  * projected month-end spend
+  * remaining budget/spend if available
+  * forecast method
+  * insufficient-data state
 
 Tests:
 
-* CRUD
+* forecast with normal historical data
+* insufficient history
+* zero/no spending
+* refunds/income handling
 * user isolation
-* Decimal calculations
-* progress percentage
-* contribution updates
-* date validation
-* projected completion
-* frontend goal flows
-* AI goal access
+* Decimal accuracy
+* current-month projection
+* regression against existing forecasting behavior
 
 IMPORTANT:
 
-* Do not modify authentication architecture.
-* Do not change existing transaction/subscription behavior.
-* Do not implement financial health score, investments, notifications, or forecasting improvements yet.
-* Use Alembic only if a schema change is required.
-* Run the complete backend and frontend test suites.
+* Do NOT add Prophet or a heavy ML dependency unless the existing architecture clearly requires it.
+* Do NOT change authentication/database architecture.
+* Do NOT implement financial-health scoring, investments, notifications, or other features yet.
+* Preserve existing forecast API compatibility where possible.
 
-STOP after Phase 2E-C and report:
+Run the full backend and frontend test suites.
+
+STOP after Phase 2E-D and report:
 
 * files changed
-* API/schema changes
-* migration details, if any
+* forecasting methodology implemented
+* API changes
 * tests added
 * backend/frontend/total tests
-* limitations
+* known limitations

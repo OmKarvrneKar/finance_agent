@@ -124,6 +124,15 @@ export const getCategoryForecast = async (category, month = '') => {
   return response.data;
 };
 
+export const getImprovedForecast = async (month = '', category = '') => {
+  const params = new URLSearchParams();
+  if (month) params.set('month', month);
+  if (category) params.set('category', category);
+  const qs = params.toString();
+  const response = await api.get(`/forecast/improved${qs ? '?' + qs : ''}`);
+  return response.data;
+};
+
 // Budgets
 export const getBudgets = async (month = '') => {
   const params = month ? `?month=${month}` : '';
