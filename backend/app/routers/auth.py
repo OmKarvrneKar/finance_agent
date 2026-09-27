@@ -6,13 +6,15 @@ from sqlalchemy.orm import Session
 from app.database.db import get_db, User
 from app.models.schemas import UserCreate, UserResponse, TokenResponse
 from app.auth import hash_password, verify_password, create_access_token, get_current_user
+from app.dependencies import auth_rate_limit, register_rate_limit
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-@router.post("/auth/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/auth/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(register_rate_limit)])
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
     # Check for duplicate email
     existing = db.query(User).filter(User.email == user_in.email).first()
@@ -35,7 +37,8 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     return user
 
 
-@router.post("/auth/login", response_model=TokenResponse)
+@router.post("/auth/login", response_model=TokenResponse,
+             dependencies=[Depends(auth_rate_limit)])
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):

@@ -14,6 +14,7 @@ from app.database.db import get_db, PendingReceipt, Transaction, User
 from app.models import schemas
 from app.services import receipts
 from app.auth import get_current_user
+from app.dependencies import upload_rate_limit
 
 router = APIRouter()
 
@@ -23,7 +24,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 MAX_RECEIPT_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 
-@router.post("/receipts/upload", response_model=schemas.PendingReceiptResponse)
+@router.post("/receipts/upload", response_model=schemas.PendingReceiptResponse,
+             dependencies=[Depends(upload_rate_limit)])
 async def upload_receipt(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),

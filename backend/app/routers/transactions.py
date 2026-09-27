@@ -10,12 +10,14 @@ from app.services.csv_parser import parse_bank_csv
 from app.services.categorizer import categorize_transactions
 from app.models.schemas import UploadSummaryResponse, PaginatedTransactionsResponse, SubscriptionResponse
 from app.auth import get_current_user
+from app.dependencies import upload_rate_limit
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.post("/upload-statement", response_model=UploadSummaryResponse)
+@router.post("/upload-statement", response_model=UploadSummaryResponse,
+             dependencies=[Depends(upload_rate_limit)])
 async def upload_statement(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
