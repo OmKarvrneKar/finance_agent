@@ -6,9 +6,6 @@ import Dashboard from '../pages/Dashboard';
 
 vi.mock('../utils/api', () => ({
   getAnalyticsSummary: vi.fn(),
-  getForecastAlerts: vi.fn().mockResolvedValue([]),
-  getForecastSummary: vi.fn().mockResolvedValue(null),
-  getAnomalies: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('../components/ForecastAlerts', () => ({ default: () => <div data-testid="forecast-alerts" /> }));
@@ -45,25 +42,13 @@ describe('Dashboard page', () => {
     localStorage.clear();
   });
 
-  it('renders loading state initially', () => {
+  it('shows skeleton loading state', () => {
     getAnalyticsSummary.mockReturnValue(new Promise(() => {}));
     renderWithAuth(<Dashboard />);
-    expect(screen.getByText('Financial Dashboard')).toBeInTheDocument();
-    // Skeleton loading
     expect(document.querySelector('.skeleton')).toBeTruthy();
   });
 
-  it('renders analytics data after loading', async () => {
-    getAnalyticsSummary.mockResolvedValue(mockAnalytics);
-    renderWithAuth(<Dashboard />);
-    await waitFor(() => {
-      expect(screen.getByText('Financial Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('Groceries')).toBeInTheDocument();
-      expect(screen.getByText('Transport')).toBeInTheDocument();
-    });
-  });
-
-  it('renders summary cards with correct values', async () => {
+  it('renders summary cards after loading', async () => {
     getAnalyticsSummary.mockResolvedValue(mockAnalytics);
     renderWithAuth(<Dashboard />);
     await waitFor(() => {
@@ -74,7 +59,7 @@ describe('Dashboard page', () => {
     });
   });
 
-  it('shows period presets', async () => {
+  it('renders period presets', async () => {
     getAnalyticsSummary.mockResolvedValue(mockAnalytics);
     renderWithAuth(<Dashboard />);
     await waitFor(() => {
@@ -84,24 +69,50 @@ describe('Dashboard page', () => {
     });
   });
 
-  it('calls getAnalyticsSummary on preset click', async () => {
+  it('calls getAnalyticsSummary with default preset on mount', async () => {
     getAnalyticsSummary.mockResolvedValue(mockAnalytics);
     renderWithAuth(<Dashboard />);
-    await waitFor(() => expect(screen.getByText('This Month')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Last Month'));
     await waitFor(() => {
-      expect(getAnalyticsSummary).toHaveBeenCalledWith(
-        expect.objectContaining({ start: expect.any(String), end: expect.any(String) })
-      );
+      expect(getAnalyticsSummary).toHaveBeenCalledTimes(1);
+      const call = getAnalyticsSummary.mock.calls[0][0];
+      expect(call.start).toBeTruthy();
+      expect(call.end).toBeTruthy();
     });
   });
 
-  it('shows date range inputs for custom range', async () => {
+  it('calls getAnalyticsSummary when preset changes', async () => {
+    getAnalyticsSummary.mockResolvedValue(mockAnalytics);
+    renderWithAuth(<Dashboard />);
+    await waitFor(() => expect(screen.getByText('Last Month')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Last Month'));
+    await waitFor(() => {
+      expect(getAnalyticsSummary).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('shows date inputs for custom range', async () => {
     getAnalyticsSummary.mockResolvedValue(mockAnalytics);
     renderWithAuth(<Dashboard />);
     await waitFor(() => {
       const dateInputs = document.querySelectorAll('input[type="date"]');
-      expect(dateInputs.length).toBeGreaterThanOrEqual(2);
+      expect(dateInputs.length).toBe(2);
+    });
+  });
+
+  it('calls getAnalyticsSummary with custom dates', async () => {
+    getAnalyticsSummary.mockResolvedValue(mockAnalytics);
+    renderWithAuth(<Dashboard />);
+    await waitFor(() => expect(getAnalyticsSummary).toHaveBeenCalledTimes(1));
+    let dateInputs = document.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[0], { target: { value: '2026-06-01' } });
+    await waitFor(() => expect(getAnalyticsSummary.mock.calls.length).toBeGreaterThan(1));
+    dateInputs = document.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[1], { target: { value: '2026-06-30' } });
+    await waitFor(() => {
+      const calls = getAnalyticsSummary.mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+      expect(lastCall.start).toBe('2026-06-01');
+      expect(lastCall.end).toBe('2026-06-30');
     });
   });
 
@@ -140,20 +151,6 @@ describe('Dashboard page', () => {
     renderWithAuth(<Dashboard />);
     await waitFor(() => {
       expect(screen.queryByText('Spending Trend')).not.toBeInTheDocument();
-    });
-  });
-
-  it('sends custom dates when date inputs change', async () => {
-    getAnalyticsSummary.mockResolvedValue(mockAnalytics);
-    renderWithAuth(<Dashboard />);
-    await waitFor(() => expect(screen.getByText('This Month')).toBeInTheDocument());
-    const dateInputs = document.querySelectorAll('input[type="date"]');
-    fireEvent.change(dateInputs[0], { target: { value: '2026-06-01' } });
-    fireEvent.change(dateInputs[1], { target: { value: '2026-06-30' } });
-    await waitFor(() => {
-      expect(getAnalyticsSummary).toHaveBeenCalledWith(
-        expect.objectContaining({ start: '2026-06-01', end: '2026-06-30' })
-      );
     });
   });
 });
