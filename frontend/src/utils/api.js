@@ -183,6 +183,16 @@ export const discardReceipt = async (id) => {
   return response.data;
 };
 
+// Analytics
+export const getAnalyticsSummary = async ({ start_date = '', end_date = '' } = {}) => {
+  const params = new URLSearchParams();
+  if (start_date) params.append('start_date', start_date);
+  if (end_date) params.append('end_date', end_date);
+  const qs = params.toString();
+  const response = await api.get(`/analytics/summary${qs ? '?' + qs : ''}`);
+  return response.data;
+};
+
 // Anomalies
 export const getAnomalies = async () => {
   const response = await api.get('/anomalies');

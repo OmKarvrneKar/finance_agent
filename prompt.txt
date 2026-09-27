@@ -1,54 +1,57 @@
-Implement ONLY Phase 2D: Frontend Authentication + Transaction Management UI.
+Implement ONLY Phase 2E-A: Dashboard Analytics & Date-Range Support.
 
-Implement:
+Add:
 
-1. Authentication UI
+1. Date-range controls
 
-* Login page
-* Registration page
-* Store authentication state safely for the current architecture
-* Logout
-* Redirect unauthenticated users to login
-* Handle expired/invalid JWT cleanly
+* Current month
+* Previous month
+* Custom start/end dates
+* Clear date range
 
-2. Transaction management UI
+2. Dashboard analytics
 
-* Transaction search
-* Merchant/description search
-* Category filter
-* Date-range filter
-* Amount filter
-* Pagination
-* Edit transaction
-* Delete transaction
-* Loading, empty, and error states
+* Total income
+* Total expenses
+* Net cash flow
+* Category spending breakdown
+* Spending trend over time
+* Compare selected period with the previous equivalent period
 
-3. Connect to the existing Phase 2C APIs.
+3. Ensure every dashboard query is scoped to the authenticated user's user_id.
 
-* Do not duplicate backend logic in the frontend.
-* Handle 401/403 responses correctly.
+4. Update existing charts to use the selected date range instead of hardcoded current-month/all-time logic.
 
-4. Tests
+5. Handle loading, empty, invalid-date, and API-error states.
 
-* Add frontend tests for login/register/logout
-* Protected route behavior
-* Transaction search/filter
-* Edit/delete
-* API error states
+6. Add backend tests for:
+
+* date-range calculations
+* user isolation
+* income/expense totals
+* category breakdown
+* period comparison
+
+7. Add frontend tests for:
+
+* date-range selection
+* chart/metric updates
+* loading/empty/error states
 
 IMPORTANT:
 
-* Do not change backend authentication architecture.
-* Do not change database schema.
-* Do not implement dashboard redesign, notifications, goals, forecasting, or other Phase 2 features yet.
-* Keep the existing dashboard functionality working.
+* Do not change authentication or database architecture.
+* Keep Decimal for monetary calculations.
+* Do not implement recurring transactions, goals, forecasting improvements, notifications, or other Phase 2 features yet.
+* Preserve existing dashboard behavior where possible.
 
-Run backend and frontend tests.
+Run the full backend and frontend test suites.
 
-STOP after Phase 2D and report:
+STOP after Phase 2E-A and report:
 
 * files changed
-* frontend tests added
-* backend tests still passing
-* total test results
-* any known issues
+* APIs changed/added
+* tests added
+* backend test result
+* frontend test result
+* any limitations

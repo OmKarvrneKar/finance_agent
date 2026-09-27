@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from .db import Transaction
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from decimal import Decimal
 from datetime import date, datetime
 
@@ -110,3 +111,67 @@ def delete_transaction(db: Session, transaction_id: int, user_id: int) -> bool:
     db.delete(tx)
     db.commit()
     return True
+
+
+def get_analytics_summary(
+    db: Session,
+    user_id: int,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> Dict[str, Any]:
+    query = db.query(Transaction).filter(Transaction.user_id == user_id)
+    if start_date:
+        query = query.filter(Transaction.date >= start_date)
+    if end_date:
+        query = query.filter(Transaction.date <= end_date)
+
+    txs = query.all()
+
+    total_income = Decimal('0')
+    total_expenses = Decimal('0')
+    category_map: Dict[str, Decimal] = {}
+
+    for tx in txs:
+        if tx.transaction_type == 'credit':
+            total_income += tx.amount
+        elif tx.transaction_type == 'debit':
+            total_expenses += tx.amount
+            cat = tx.category or 'Other'
+            category_map[cat] = category_map.get(cat, Decimal('0')) + tx.amount
+
+    net_cashflow = total_income - total_expenses
+
+    category_breakdown = [
+        {"category": cat, "amount": amt}
+        for cat, amt in sorted(category_map.items(), key=lambda x: x[1], reverse=True)
+    ]
+
+    # Spending trend: group debits by month
+    debit_query = db.query(Transaction).filter(
+        Transaction.user_id == user_id,
+        Transaction.transaction_type == 'debit',
+    )
+    if start_date:
+        debit_query = debit_query.filter(Transaction.date >= start_date)
+    if end_date:
+        debit_query = debit_query.filter(Transaction.date <= end_date)
+
+    debit_txs = debit_query.all()
+    monthly_spending: Dict[str, Decimal] = {}
+    for tx in debit_txs:
+        month_key = tx.date.strftime('%Y-%m')
+        monthly_spending[month_key] = monthly_spending.get(month_key, Decimal('0')) + tx.amount
+
+    spending_trend = [
+        {"month": m, "amount": amt}
+        for m, amt in sorted(monthly_spending.items())
+    ]
+
+    return {
+        "total_income": total_income,
+        "total_expenses": total_expenses,
+        "net_cashflow": net_cashflow,
+        "transaction_count": len(txs),
+        "category_breakdown": category_breakdown,
+        "spending_trend": spending_trend,
+    }
