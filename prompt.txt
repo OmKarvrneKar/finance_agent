@@ -1,29 +1,59 @@
-Implement ONLY Phase 2B: User Scoping + Database Migration.
+Implement ONLY Phase 2C: Transaction Management.
 
-Tasks:
+Add:
 
-* Add user_id foreign keys to all user-owned models.
-* Add appropriate user_id indexes.
-* Add user_id filtering to ALL CRUD queries, routers, and services.
-* Scope all AI agent tools to the authenticated user's user_id.
-* Ensure users cannot access another user's resources by changing an ID.
-* Set up Alembic migrations.
-* Safely migrate existing database data using the default-user/backfill strategy from PHASE2_PLAN.md.
-* Remove manual schema ALTER logic from main.py.
+1. Transaction update endpoint
+
+   * Allow editing category, description, date, amount, and other safe editable fields.
+   * Always enforce authenticated user's ownership.
+
+2. Transaction delete endpoint
+
+   * Delete only transactions belonging to the authenticated user.
+   * Prevent ID-based access to another user's transaction.
+
+3. Transaction search
+
+   * Search by description/merchant.
+   * Support category filtering.
+   * Support date-range filtering.
+   * Support amount filtering if practical.
+   * Add pagination.
+
+4. Dynamic categories
+
+   * Remove hardcoded category assumptions where appropriate.
+   * Keep existing categories/data compatible.
+
+5. AI agent integration
+
+   * Add a properly user-scoped merchant/transaction search tool.
+   * It must query the database rather than having the LLM calculate financial totals itself.
+   * Verify questions such as "How much did I spend at Starbucks?" can be answered from actual transaction data.
+
+6. Tests
+
+   * CRUD/update/delete tests.
+   * Search/filter tests.
+   * Pagination tests.
+   * Cross-user authorization tests.
+   * Agent merchant-search tests.
+   * Regression test existing functionality.
 
 IMPORTANT:
 
-* Never accept user_id from the request body/query as the authority. Always derive it from the authenticated JWT.
-* Test cross-user access explicitly for transactions, budgets, goals, receipts, anomalies, and agent queries.
-* Back up the database before migration.
-* Verify row counts and data preservation after migration.
-* Do not implement frontend changes or transaction editing/search yet.
+* Use the authenticated JWT user_id. Never trust user_id from the client.
+* Keep Decimal for all monetary calculations.
+* Do not modify authentication or Alembic architecture.
+* Do not start frontend work yet.
+* Do not implement Phase 2D or other features.
 
-Run the complete backend test suite and report:
+Run the full backend test suite.
 
-1. migration result
-2. data-preservation numbers
-3. cross-user isolation test results
-4. total tests passed
+STOP after Phase 2C and report:
 
-Stop after Phase 2B.
+* files changed
+* API endpoints added/changed
+* tests added
+* total tests passed
+* any limitations or remaining issues
