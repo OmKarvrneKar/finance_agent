@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -19,8 +20,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # OAuth2 scheme (reads Bearer token from Authorization header)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-# JWT configuration from environment
+# JWT configuration from environment — fail fast if secret is missing
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "")
+if not JWT_SECRET_KEY:
+    logger.critical("FATAL: JWT_SECRET_KEY environment variable is not set. Application cannot start.")
+    sys.exit(1)
+
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))  # 24 hours default
 

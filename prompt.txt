@@ -1,55 +1,47 @@
-Implement ONLY Phase 2E-D: Improved Spending Forecasting.
+Implement ONLY the highest-priority security fixes from the Phase 2F audit.
 
-First inspect the existing forecasting implementation.
+Fix:
 
-Improve it to support:
+1. JWT_SECRET_KEY
 
-* Historical spending trend using available transaction history.
-* Moving-average based forecasting where enough historical data exists.
-* Current month projected total.
-* Remaining-days projection.
-* Clearly distinguish actual spending from forecasted spending.
-* Handle months with insufficient historical data gracefully.
-* Keep all monetary calculations as Decimal.
-* Scope all transaction data to the authenticated user.
-* Avoid double-counting refunds/income incorrectly.
-* Explain the forecast method in the API response so the UI can show how the number was calculated.
+* Remove the empty-string fallback.
+* Application must fail fast at startup if JWT_SECRET_KEY is missing/empty.
+* Never log the secret.
 
-Frontend:
+2. Authentication rate limiting
 
-* Update the existing forecast/dashboard UI to show:
+* Add rate limiting to /auth/login.
+* Add reasonable rate limiting to /auth/register.
+* Keep existing /agent/ask protection working.
+* Keep limits configurable through environment variables where practical.
 
-  * actual spent
-  * projected month-end spend
-  * remaining budget/spend if available
-  * forecast method
-  * insufficient-data state
+3. Upload rate limiting
 
-Tests:
+* Add rate limiting to CSV and receipt upload endpoints.
 
-* forecast with normal historical data
-* insufficient history
-* zero/no spending
-* refunds/income handling
-* user isolation
-* Decimal accuracy
-* current-month projection
-* regression against existing forecasting behavior
+4. Add security headers middleware:
+
+* X-Content-Type-Options
+* X-Frame-Options
+* Referrer-Policy
+* appropriate Content-Security-Policy
+* HSTS only when running behind HTTPS / production configuration.
+
+5. Add a global exception handler so unexpected exceptions return a generic 500 response without exposing stack traces or secrets.
 
 IMPORTANT:
 
-* Do NOT add Prophet or a heavy ML dependency unless the existing architecture clearly requires it.
-* Do NOT change authentication/database architecture.
-* Do NOT implement financial-health scoring, investments, notifications, or other features yet.
-* Preserve existing forecast API compatibility where possible.
+* Do not change authentication architecture.
+* Do not change database schema.
+* Do not change existing business features.
+* Preserve existing API behavior except for security improvements.
+* Add tests for every security fix.
+* Run the full backend + frontend test suites.
 
-Run the full backend and frontend test suites.
-
-STOP after Phase 2E-D and report:
+STOP after these fixes and report:
 
 * files changed
-* forecasting methodology implemented
-* API changes
+* security behavior
+* rate-limit values
 * tests added
 * backend/frontend/total tests
-* known limitations
