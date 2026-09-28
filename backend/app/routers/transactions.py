@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List
 from decimal import Decimal
+import csv
+import io
 import logging
 
 from app.database.db import get_db, User
@@ -125,6 +128,61 @@ async def upload_statement(
         "duplicate_transactions": duplicates,
         "total_in_file": len(categorized_transactions)
     }
+
+@router.get("/transactions/export")
+def export_transactions(
+    start_date: str = Query(None, description="Start date YYYY-MM-DD"),
+    end_date: str = Query(None, description="End date YYYY-MM-DD"),
+    category: str = Query(None, description="Filter by category"),
+    transaction_type: str = Query(None, description="Filter by transaction type"),
+    search: str = Query(None, description="Search in description"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    query = db.query(crud.Transaction).filter(crud.Transaction.user_id == current_user.id)
+    if category:
+        query = query.filter(crud.Transaction.category == category)
+    if transaction_type:
+        query = query.filter(crud.Transaction.transaction_type == transaction_type)
+    if search:
+        query = query.filter(crud.Transaction.description.ilike(f"%{search}%"))
+    if start_date:
+        query = query.filter(crud.Transaction.date >= start_date)
+    if end_date:
+        query = query.filter(crud.Transaction.date <= end_date)
+    query = query.order_by(crud.Transaction.date.desc(), crud.Transaction.id.desc())
+    transactions = query.all()
+
+    def generate():
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["date", "description", "category", "amount", "transaction_type", "source"])
+        output.seek(0)
+        yield output.getvalue()
+        output.truncate(0)
+        output.seek(0)
+        for tx in transactions:
+            date_str = tx.date.isoformat() if hasattr(tx.date, "isoformat") else str(tx.date)
+            writer.writerow([
+                date_str,
+                tx.description,
+                tx.category,
+                str(tx.amount),
+                tx.transaction_type,
+                tx.source or "",
+            ])
+            output.seek(0)
+            yield output.getvalue()
+            output.truncate(0)
+            output.seek(0)
+
+    filename = "transactions_export.csv"
+    return StreamingResponse(
+        generate(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
 
 @router.get("/transactions", response_model=PaginatedTransactionsResponse)
 def get_transactions(
