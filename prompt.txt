@@ -1,29 +1,76 @@
-Start Phase 3A — AI-Powered Savings Recommendations.
+Start Phase 3B — Merchant-Level Analytics.
 
-FIRST STEP ONLY: build the deterministic backend recommendation engine. Do not integrate the LLM yet.
+FIRST STEP ONLY: build the deterministic backend analytics. Do NOT integrate Gemini and do NOT build the frontend yet.
 
 Requirements:
 
-* Analyze only the authenticated user's transactions.
-* Identify realistic savings opportunities from actual spending data.
-* Start with:
+Create user-scoped merchant analytics that can answer:
 
-  1. high-spending categories
-  2. high-frequency discretionary merchants
-  3. significant spending increases versus a previous comparable period
-* Calculate estimated savings entirely in backend code using Decimal.
-* Never invent savings amounts.
-* Return the calculation inputs/supporting data with each recommendation so the result is explainable.
-* Handle insufficient data safely.
-* Do not change existing forecasting, health-score, budget, or authentication logic.
+* total spending by merchant
+* transaction count by merchant
+* average transaction amount
+* largest transaction
+* spending percentage of total expenses
+* date-range filtering
+* top merchants ordered by spending
+* search/filter by merchant name
 
 Add:
 
-* user-scoped service/module
-* API endpoint
+* backend service/module
+* authenticated API endpoint
 * Pydantic response models
-* backend tests for calculations, isolation, Decimal precision, insufficient data, and edge cases.
+* Decimal-safe monetary calculations
+* strict user isolation
+
+Example:
+GET /api/analytics/merchants?start_date=...&end_date=...&limit=10&search=starbucks
+
+The endpoint should return enough data to support:
+"How much did I spend at Starbucks?"
+and
+"Where do I spend the most?"
+
+Validation:
+
+* valid date ranges
+* reasonable limit bounds
+* empty results
+* unknown merchant
+* duplicate merchant descriptions should be handled consistently
+* credit/income transactions must not incorrectly appear as spending
+* user isolation
+
+Tests:
+
+* merchant aggregation
+* total/count/average/largest calculation
+* date filtering
+* search filtering
+* ordering
+* limit
+* empty results
+* Decimal precision
+* income/credit exclusion from spending analytics
+* user isolation
+* unauthenticated access
+
+IMPORTANT:
+
+* Do NOT use Gemini yet.
+* Do NOT modify the existing savings recommendation feature.
+* Do NOT modify authentication.
+* Do NOT build frontend UI yet.
+* Do NOT add unrelated analytics.
 
 Run the full backend test suite.
 
-STOP after this step. Do not add Gemini/AI yet. Report the files changed, endpoint, calculation methodology, and test results.
+STOP after this step and report:
+
+1. files changed
+2. endpoint
+3. merchant aggregation methodology
+4. filtering rules
+5. tests added
+6. backend/frontend/total tests
+7. limitations

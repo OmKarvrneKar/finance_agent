@@ -268,3 +268,24 @@ class SavingsRecommendationsResponse(BaseModel):
     merchants_analyzed: int
     months_of_data: int
     generated_at: datetime
+
+
+# Merchant Analytics schemas
+
+class MerchantAnalyticsItem(BaseModel):
+    merchant: str
+    total_spent: Decimal
+    transaction_count: int
+    average_amount: Decimal
+    largest_transaction: Decimal
+    spending_percent: Decimal
+    first_seen: str
+    last_seen: str
+    category: Optional[str] = None
+
+
+class MerchantAnalyticsResponse(BaseModel):
+    merchants: List[MerchantAnalyticsItem]
+    total_merchants: int
+    total_expenses: Decimal
+    date_range: Optional[Dict[str, Optional[str]]] = None

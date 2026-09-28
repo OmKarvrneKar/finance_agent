@@ -260,3 +260,9 @@ export const unmarkRecurring = async (transactionId) => {
   const response = await api.delete(`/transactions/${transactionId}/recurring`);
   return response.data;
 };
+
+// Savings Recommendations
+export const getSavingsRecommendations = async () => {
+  const response = await api.get('/savings-recommendations');
+  return response.data;
+};
