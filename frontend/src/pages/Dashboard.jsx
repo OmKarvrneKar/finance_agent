@@ -7,6 +7,7 @@ import ForecastAlerts from '../components/ForecastAlerts';
 import AnomalyAlerts from '../components/AnomalyAlerts';
 import HealthScoreCard from '../components/HealthScoreCard';
 import SavingsRecommendations from '../components/SavingsRecommendations';
+import MerchantAnalytics from '../components/MerchantAnalytics';
 import { ArrowDownCircle, ArrowUpCircle, Wallet, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
 
 const COLORS = ['#3B82F6', '#059669', '#D97706', '#DC2626', '#7C3AED', '#0284C7', '#C026D3', '#0D9488', '#E11D48'];
@@ -162,6 +163,14 @@ const Dashboard = () => {
       {/* Savings Recommendations */}
       <div style={{ marginBottom: '24px' }}>
         <SavingsRecommendations />
+      </div>
+
+      {/* Merchant Analytics */}
+      <div style={{ marginBottom: '24px' }}>
+        <MerchantAnalytics
+          startDate={useCustom ? customStart : getPresetDates(preset).start}
+          endDate={useCustom ? customEnd : getPresetDates(preset).end}
+        />
       </div>
 
       {/* Forecast Card */}

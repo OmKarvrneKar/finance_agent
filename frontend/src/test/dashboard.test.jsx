@@ -13,6 +13,7 @@ vi.mock('../utils/api', () => ({
 vi.mock('../components/ForecastAlerts', () => ({ default: () => <div data-testid="forecast-alerts" /> }));
 vi.mock('../components/AnomalyAlerts', () => ({ default: () => <div data-testid="anomaly-alerts" /> }));
 vi.mock('../components/SavingsRecommendations', () => ({ default: () => <div data-testid="savings-recommendations" /> }));
+vi.mock('../components/MerchantAnalytics', () => ({ default: () => <div data-testid="merchant-analytics" /> }));
 
 import { getAnalyticsSummary, getMe } from '../utils/api';
 

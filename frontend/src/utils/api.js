@@ -229,6 +229,17 @@ export const getAnalyticsSummary = async ({ start_date = '', end_date = '' } = {
   return response.data;
 };
 
+export const getMerchantAnalytics = async ({ start_date = '', end_date = '', limit = 20, search = '' } = {}) => {
+  const params = new URLSearchParams();
+  if (start_date) params.append('start_date', start_date);
+  if (end_date) params.append('end_date', end_date);
+  if (limit) params.append('limit', limit);
+  if (search) params.append('search', search);
+  const qs = params.toString();
+  const response = await api.get(`/analytics/merchants${qs ? '?' + qs : ''}`);
+  return response.data;
+};
+
 // Anomalies
 export const getAnomalies = async () => {
   const response = await api.get('/anomalies');
