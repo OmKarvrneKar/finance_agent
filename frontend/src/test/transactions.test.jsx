@@ -9,9 +9,10 @@ vi.mock('../utils/api', () => ({
   logoutUser: vi.fn(),
   searchTransactions: vi.fn(),
   deleteTransaction: vi.fn(),
+  getTransactionsExport: vi.fn(),
 }));
 
-import { searchTransactions, deleteTransaction, getMe } from '../utils/api';
+import { searchTransactions, deleteTransaction, getTransactionsExport, getMe } from '../utils/api';
 
 const mockTx = (overrides = {}) => ({
   id: '1',
@@ -162,6 +163,99 @@ describe('Transactions page', () => {
     renderWithAuth(<Transactions />);
     await waitFor(() => {
       expect(screen.getByText('Failed to fetch transactions')).toBeInTheDocument();
+    });
+  });
+
+  describe('CSV Export', () => {
+    it('renders export button', async () => {
+      searchTransactions.mockResolvedValue({ transactions: [], total: 0 });
+      renderWithAuth(<Transactions />);
+      expect(screen.getByText('Export CSV')).toBeInTheDocument();
+    });
+
+    it('calls getTransactionsExport with active filters', async () => {
+      searchTransactions.mockResolvedValue({ transactions: [], total: 0 });
+      const mockBlob = new Blob(['date,description\n'], { type: 'text/csv' });
+      getTransactionsExport.mockResolvedValue({
+        data: mockBlob,
+        headers: { 'content-disposition': 'attachment; filename="transactions_export.csv"' },
+      });
+      renderWithAuth(<Transactions />);
+      fireEvent.change(screen.getByPlaceholderText('Search by merchant or description...'), { target: { value: 'starbucks' } });
+      await waitFor(() => {
+        fireEvent.click(screen.getByText('Export CSV'));
+      });
+      await waitFor(() => {
+        expect(getTransactionsExport).toHaveBeenCalledWith(
+          expect.objectContaining({ search: 'starbucks' })
+        );
+      });
+    });
+
+    it('passes category filter to export', async () => {
+      searchTransactions.mockResolvedValue({ transactions: [], total: 0 });
+      getTransactionsExport.mockResolvedValue({
+        data: new Blob(),
+        headers: { 'content-disposition': 'attachment; filename="transactions_export.csv"' },
+      });
+      renderWithAuth(<Transactions />);
+      fireEvent.change(screen.getByDisplayValue('All Categories'), { target: { value: 'Food & Dining' } });
+      fireEvent.click(screen.getByText('Export CSV'));
+      await waitFor(() => {
+        expect(getTransactionsExport).toHaveBeenCalledWith(
+          expect.objectContaining({ category: 'Food & Dining' })
+        );
+      });
+    });
+
+    it('shows loading state while exporting', async () => {
+      searchTransactions.mockResolvedValue({ transactions: [], total: 0 });
+      let resolveExport;
+      getTransactionsExport.mockReturnValue(new Promise((r) => { resolveExport = r; }));
+      renderWithAuth(<Transactions />);
+      fireEvent.click(screen.getByText('Export CSV'));
+      await waitFor(() => {
+        expect(screen.getByText('Exporting...')).toBeInTheDocument();
+      });
+      resolveExport({ data: new Blob(), headers: {} });
+      await waitFor(() => {
+        expect(screen.getByText('Export CSV')).toBeInTheDocument();
+      });
+    });
+
+    it('prevents duplicate export requests', async () => {
+      searchTransactions.mockResolvedValue({ transactions: [], total: 0 });
+      let resolveExport;
+      getTransactionsExport.mockReturnValue(new Promise((r) => { resolveExport = r; }));
+      renderWithAuth(<Transactions />);
+      fireEvent.click(screen.getByText('Export CSV'));
+      await waitFor(() => expect(screen.getByText('Exporting...')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Exporting...'));
+      expect(getTransactionsExport).toHaveBeenCalledTimes(1);
+      resolveExport({ data: new Blob(), headers: {} });
+    });
+
+    it('shows error on export failure', async () => {
+      searchTransactions.mockResolvedValue({ transactions: [], total: 0 });
+      getTransactionsExport.mockRejectedValue(new Error('Network error'));
+      renderWithAuth(<Transactions />);
+      fireEvent.click(screen.getByText('Export CSV'));
+      await waitFor(() => {
+        expect(screen.getByText('Failed to export transactions')).toBeInTheDocument();
+      });
+    });
+
+    it('shows success feedback after export', async () => {
+      searchTransactions.mockResolvedValue({ transactions: [], total: 0 });
+      getTransactionsExport.mockResolvedValue({
+        data: new Blob(),
+        headers: { 'content-disposition': 'attachment; filename="transactions_export.csv"' },
+      });
+      renderWithAuth(<Transactions />);
+      fireEvent.click(screen.getByText('Export CSV'));
+      await waitFor(() => {
+        expect(screen.getByText('CSV exported successfully.')).toBeInTheDocument();
+      });
     });
   });
 });

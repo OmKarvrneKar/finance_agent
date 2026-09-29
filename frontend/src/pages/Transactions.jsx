@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { searchTransactions, deleteTransaction } from '../utils/api';
+import { searchTransactions, deleteTransaction, getTransactionsExport } from '../utils/api';
 import TransactionRow from '../components/TransactionRow';
 import EditTransactionModal from '../components/EditTransactionModal';
-import { Filter, ChevronLeft, ChevronRight, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { Filter, ChevronLeft, ChevronRight, RefreshCw, Search, Trash2, Download } from 'lucide-react';
 
 const CATEGORIES = [
   '', 'Food & Dining', 'Groceries', 'Shopping', 'Transport',
@@ -25,6 +25,8 @@ const Transactions = () => {
   const [amountMax, setAmountMax] = useState('');
   const [editingTx, setEditingTx] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(false);
   const limit = 10;
 
   const fetchTransactions = useCallback(async () => {
@@ -61,6 +63,40 @@ const Transactions = () => {
     }
   };
 
+  const handleExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    setExportSuccess(false);
+    setError('');
+    try {
+      const response = await getTransactionsExport({
+        start_date: dateFrom,
+        end_date: dateTo,
+        category,
+        transaction_type: type,
+        search: searchQuery,
+      });
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const disposition = response.headers?.['content-disposition'] || '';
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      link.download = match ? match[1] : 'transactions_export.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      setExportSuccess(true);
+      setTimeout(() => setExportSuccess(false), 3000);
+    } catch (err) {
+      if (err.response?.status === 401) return;
+      setError('Failed to export transactions');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / limit);
 
   return (
@@ -73,11 +109,20 @@ const Transactions = () => {
         <button onClick={fetchTransactions} className="btn-secondary" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <RefreshCw size={16} /> Refresh
         </button>
+        <button onClick={handleExport} disabled={exporting} className="btn-secondary" style={{ display: 'flex', gap: '8px', alignItems: 'center', opacity: exporting ? 0.6 : 1 }}>
+          <Download size={16} /> {exporting ? 'Exporting...' : 'Export CSV'}
+        </button>
       </div>
 
       {error && (
         <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: 'var(--debit-bg)', color: 'var(--debit-text)', marginBottom: '16px', fontSize: '0.875rem' }}>
           {error}
+        </div>
+      )}
+
+      {exportSuccess && (
+        <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: 'var(--credit-bg)', color: 'var(--credit-text)', marginBottom: '16px', fontSize: '0.875rem' }}>
+          CSV exported successfully.
         </div>
       )}
 

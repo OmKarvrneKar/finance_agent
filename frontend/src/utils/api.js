@@ -74,6 +74,18 @@ export const searchTransactions = async ({ page = 1, limit = 10, q = '', categor
   return response.data;
 };
 
+export const getTransactionsExport = async ({ start_date = '', end_date = '', category = '', transaction_type = '', search = '' } = {}) => {
+  const params = new URLSearchParams();
+  if (start_date) params.append('start_date', start_date);
+  if (end_date) params.append('end_date', end_date);
+  if (category) params.append('category', category);
+  if (transaction_type) params.append('transaction_type', transaction_type);
+  if (search) params.append('search', search);
+  const qs = params.toString();
+  const response = await api.get(`/transactions/export${qs ? '?' + qs : ''}`, { responseType: 'blob' });
+  return response;
+};
+
 export const getTransaction = async (id) => {
   const response = await api.get(`/transactions/${id}`);
   return response.data;
