@@ -85,6 +85,19 @@ class AnomalyReview(Base):
     status = Column(String, nullable=False)  # "dismissed" | "confirmed_issue"
     reviewed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+class TransactionSplit(Base):
+    __tablename__ = "transaction_splits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    category = Column(String, nullable=False)
+    amount = Column(Numeric(12, 2), nullable=False)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
 class RevokedToken(Base):
     __tablename__ = "revoked_tokens"
     id = Column(Integer, primary_key=True, index=True)

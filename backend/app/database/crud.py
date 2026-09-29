@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from .db import Transaction, SavingsGoal
+from .db import Transaction, TransactionSplit, SavingsGoal
 from typing import List, Dict, Any, Tuple, Optional
 from decimal import Decimal
 from datetime import date, datetime
@@ -316,3 +316,106 @@ def get_savings_goals_summary(db: Session, user_id: int) -> Dict[str, Any]:
         "total_saved": total_saved,
         "overall_progress": float(total_saved / total_target * 100) if total_target > 0 else 0,
     }
+
+
+# --- Transaction Split CRUD ---
+
+def get_transaction(db: Session, transaction_id: int, user_id: int) -> Optional[Transaction]:
+    return db.query(Transaction).filter(
+        Transaction.id == transaction_id,
+        Transaction.user_id == user_id,
+    ).first()
+
+
+def get_splits_for_transaction(db: Session, transaction_id: int, user_id: int) -> List[TransactionSplit]:
+    return db.query(TransactionSplit).filter(
+        TransactionSplit.transaction_id == transaction_id,
+        TransactionSplit.user_id == user_id,
+    ).order_by(TransactionSplit.id).all()
+
+
+def get_split(db: Session, split_id: int, user_id: int) -> Optional[TransactionSplit]:
+    return db.query(TransactionSplit).filter(
+        TransactionSplit.id == split_id,
+        TransactionSplit.user_id == user_id,
+    ).first()
+
+
+def create_split(db: Session, transaction_id: int, user_id: int, category: str,
+                 amount: Decimal, description: Optional[str] = None) -> TransactionSplit:
+    split = TransactionSplit(
+        transaction_id=transaction_id,
+        user_id=user_id,
+        category=category,
+        amount=amount,
+        description=description,
+    )
+    db.add(split)
+    db.commit()
+    db.refresh(split)
+    return split
+
+
+def create_splits_batch(db: Session, transaction_id: int, user_id: int,
+                        splits_data: List[Dict[str, Any]]) -> List[TransactionSplit]:
+    db_splits = []
+    for s in splits_data:
+        split = TransactionSplit(
+            transaction_id=transaction_id,
+            user_id=user_id,
+            category=s['category'],
+            amount=s['amount'],
+            description=s.get('description'),
+        )
+        db.add(split)
+        db_splits.append(split)
+    db.commit()
+    for s in db_splits:
+        db.refresh(s)
+    return db_splits
+
+
+def update_split(db: Session, split_id: int, user_id: int, updates: Dict[str, Any]) -> Optional[TransactionSplit]:
+    split = db.query(TransactionSplit).filter(
+        TransactionSplit.id == split_id,
+        TransactionSplit.user_id == user_id,
+    ).first()
+    if not split:
+        return None
+    for key, value in updates.items():
+        if hasattr(split, key) and value is not None:
+            setattr(split, key, value)
+    db.commit()
+    db.refresh(split)
+    return split
+
+
+def delete_split(db: Session, split_id: int, user_id: int) -> bool:
+    split = db.query(TransactionSplit).filter(
+        TransactionSplit.id == split_id,
+        TransactionSplit.user_id == user_id,
+    ).first()
+    if not split:
+        return False
+    db.delete(split)
+    db.commit()
+    return True
+
+
+def delete_splits_for_transaction(db: Session, transaction_id: int, user_id: int) -> int:
+    splits = db.query(TransactionSplit).filter(
+        TransactionSplit.transaction_id == transaction_id,
+        TransactionSplit.user_id == user_id,
+    ).all()
+    count = len(splits)
+    for s in splits:
+        db.delete(s)
+    db.commit()
+    return count
+
+
+def get_split_total(db: Session, transaction_id: int) -> Decimal:
+    result = db.query(func.sum(TransactionSplit.amount)).filter(
+        TransactionSplit.transaction_id == transaction_id,
+    ).scalar()
+    return result or Decimal('0')

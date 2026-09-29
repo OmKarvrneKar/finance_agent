@@ -1,62 +1,69 @@
-Start Phase 3D — PDF Financial Report.
+Start Phase 3E — Split Transactions.
 
-FIRST STEP ONLY: implement the backend monthly financial report PDF. Do NOT build the frontend yet.
-
-Add an authenticated endpoint such as:
-
-GET /api/reports/monthly?year=YYYY&month=MM
+FIRST STEP ONLY: implement the backend data model and API. Do NOT build the frontend yet.
 
 Requirements:
 
-* Generate a downloadable PDF for ONLY the authenticated user's data.
-* Use the existing financial calculation services where possible.
-* Include:
-  * report period
-  * total income
-  * total expenses
-  * net cash flow
-  * category spending breakdown
-  * top merchants
-  * recurring expenses/subscriptions
-  * budget status if budget data exists
-  * savings-goal progress if available
-* Monetary values must come from deterministic backend calculations.
-* Use Decimal for financial calculations.
-* Do NOT ask Gemini to calculate financial numbers.
-* PDF should be readable and professionally structured.
-* Handle months with no transactions gracefully.
-* Validate year/month.
-* Prevent access to another user's data.
+Allow one transaction to be divided into multiple category splits.
+
+Example:
+Transaction = ₹5,000
+
+* Groceries = ₹3,000
+* Shopping = ₹1,500
+* Household = ₹500
+
+Rules:
+
+* Split amounts must sum EXACTLY to the original transaction amount.
+* Use Decimal for all money calculations.
+* A split must belong to the same authenticated user's transaction.
+* Prevent negative/zero split amounts.
+* Prevent duplicate/invalid category references where applicable.
+* A transaction without splits must continue working exactly as before.
+* Existing transaction APIs must not break.
+
+Add:
+
+* database model/schema + migration
+* Pydantic models
+* authenticated create/update/delete/list split endpoints
+* service-layer validation
+* user isolation
+* transaction total validation
+
+Important:
+
+* Existing transaction amount remains authoritative.
+* Do not change the transaction amount when splitting.
+* Category analytics should NOT be changed yet unless required by the model.
+* Do NOT add frontend UI.
+* Do NOT add Gemini.
+* Do NOT modify unrelated features.
 
 Tests:
 
-* authentication
+* create valid split
+* exact total matching
+* under/over total rejection
+* zero/negative amounts
+* update splits
+* delete splits
 * user isolation
-* valid month
-* invalid month/year
-* empty month
-* income/expense totals
-* category totals
-* merchant totals
-* PDF response/content type
-* Content-Disposition filename
-* no cross-user data leakage
+* unauthenticated access
+* transaction without splits still works
+* Decimal precision
+* rollback/atomicity on failed split operations
 
-IMPORTANT:
+Run the full backend + frontend test suites.
 
-* Do NOT build frontend UI yet.
-* Do NOT add Gemini.
-* Do NOT modify existing transaction/export logic.
-* Reuse existing analytics/calculation code instead of duplicating formulas.
-* Run full backend + frontend tests.
-
-STOP after this step and report:
+STOP and report:
 
 1. files changed
-2. endpoint
-3. PDF contents
-4. data/calculation sources
-5. security/user isolation
+2. database design
+3. endpoints
+4. validation rules
+5. migration
 6. tests added
 7. backend/frontend/total tests
 8. limitations

@@ -289,3 +289,81 @@ class MerchantAnalyticsResponse(BaseModel):
     total_merchants: int
     total_expenses: Decimal
     date_range: Optional[Dict[str, Optional[str]]] = None
+
+
+# Transaction Split schemas
+
+class TransactionSplitCreate(BaseModel):
+    category: str
+    amount: Decimal
+    description: Optional[str] = None
+
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v: Decimal) -> Decimal:
+        if v <= 0:
+            raise ValueError("Split amount must be positive")
+        return v
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Category cannot be empty")
+        return v.strip()
+
+
+class TransactionSplitUpdate(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    category: Optional[str] = None
+    amount: Optional[Decimal] = None
+    description: Optional[str] = None
+
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v <= 0:
+            raise ValueError("Split amount must be positive")
+        return v
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and (not v or not v.strip()):
+            raise ValueError("Category cannot be empty")
+        return v.strip() if v else v
+
+
+class TransactionSplitResponse(BaseModel):
+    id: int
+    transaction_id: int
+    user_id: int
+    category: str
+    amount: Decimal
+    description: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TransactionWithSplitsResponse(BaseModel):
+    id: int
+    user_id: int
+    date: date_type
+    description: str
+    amount: Decimal
+    transaction_type: str
+    category: str
+    subcategory: Optional[str] = None
+    is_recurring: bool
+    source: str
+    created_at: datetime
+    splits: List[TransactionSplitResponse] = []
+    split_total: Decimal = Decimal('0')
+    is_split: bool = False
+
+    class Config:
+        from_attributes = True
