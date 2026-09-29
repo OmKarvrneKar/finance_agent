@@ -172,13 +172,23 @@ def get_analytics_summary(
     total_expenses = Decimal('0')
     category_map: Dict[str, Decimal] = {}
 
+    # Bulk-fetch splits for all debit transactions
+    debit_tx_ids = [tx.id for tx in txs if tx.transaction_type == 'debit']
+    splits_map = get_splits_by_transaction_ids(db, debit_tx_ids, user_id)
+
     for tx in txs:
         if tx.transaction_type == 'credit':
             total_income += tx.amount
         elif tx.transaction_type == 'debit':
             total_expenses += tx.amount
-            cat = tx.category or 'Other'
-            category_map[cat] = category_map.get(cat, Decimal('0')) + tx.amount
+            # Split-aware: use split categories if splits exist
+            if tx.id in splits_map:
+                for split in splits_map[tx.id]:
+                    cat = split['category'] or 'Other'
+                    category_map[cat] = category_map.get(cat, Decimal('0')) + split['amount']
+            else:
+                cat = tx.category or 'Other'
+                category_map[cat] = category_map.get(cat, Decimal('0')) + tx.amount
 
     net_cashflow = total_income - total_expenses
 
@@ -187,7 +197,7 @@ def get_analytics_summary(
         for cat, amt in sorted(category_map.items(), key=lambda x: x[1], reverse=True)
     ]
 
-    # Spending trend: group debits by month
+    # Spending trend: group debits by month (uses original transaction.amount — no double-count)
     debit_query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.transaction_type == 'debit',
@@ -419,3 +429,23 @@ def get_split_total(db: Session, transaction_id: int) -> Decimal:
         TransactionSplit.transaction_id == transaction_id,
     ).scalar()
     return result or Decimal('0')
+
+
+def get_splits_by_transaction_ids(
+    db: Session, transaction_ids: List[int], user_id: int
+) -> Dict[int, List[Dict[str, Any]]]:
+    if not transaction_ids:
+        return {}
+    splits = db.query(TransactionSplit).filter(
+        TransactionSplit.transaction_id.in_(transaction_ids),
+        TransactionSplit.user_id == user_id,
+    ).all()
+    result: Dict[int, List[Dict[str, Any]]] = {}
+    for s in splits:
+        if s.transaction_id not in result:
+            result[s.transaction_id] = []
+        result[s.transaction_id].append({
+            'category': s.category,
+            'amount': s.amount,
+        })
+    return result

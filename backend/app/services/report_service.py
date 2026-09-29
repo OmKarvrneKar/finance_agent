@@ -4,7 +4,8 @@ from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.database.db import Transaction, BudgetGoal, SavingsGoal
+from app.database.db import Transaction, TransactionSplit, BudgetGoal, SavingsGoal
+from app.database.crud import get_splits_by_transaction_ids
 
 
 def get_monthly_report_data(
@@ -31,13 +32,24 @@ def get_monthly_report_data(
     merchant_map: Dict[str, Decimal] = {}
     recurring_txs: List[Dict[str, Any]] = []
 
+    # Bulk-fetch splits for all debit transactions
+    debit_tx_ids = [tx.id for tx in txs if tx.transaction_type == 'debit']
+    splits_map = get_splits_by_transaction_ids(db, debit_tx_ids, user_id)
+
     for tx in txs:
         if tx.transaction_type == 'credit':
             total_income += tx.amount
         elif tx.transaction_type == 'debit':
             total_expenses += tx.amount
-            cat = tx.category or 'Other'
-            category_map[cat] = category_map.get(cat, Decimal('0')) + tx.amount
+            # Split-aware: use split categories if splits exist
+            if tx.id in splits_map:
+                for split in splits_map[tx.id]:
+                    cat = split['category'] or 'Other'
+                    category_map[cat] = category_map.get(cat, Decimal('0')) + split['amount']
+            else:
+                cat = tx.category or 'Other'
+                category_map[cat] = category_map.get(cat, Decimal('0')) + tx.amount
+            # Merchant analytics: always uses transaction.description + transaction.amount
             merchant = tx.description or 'Unknown'
             merchant_map[merchant] = merchant_map.get(merchant, Decimal('0')) + tx.amount
             if tx.is_recurring:

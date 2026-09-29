@@ -1,69 +1,51 @@
-Start Phase 3E — Split Transactions.
+Continue Phase 3E.
 
-FIRST STEP ONLY: implement the backend data model and API. Do NOT build the frontend yet.
+Make the EXISTING financial analytics split-aware.
 
-Requirements:
-
-Allow one transaction to be divided into multiple category splits.
-
-Example:
-Transaction = ₹5,000
-
-* Groceries = ₹3,000
-* Shopping = ₹1,500
-* Household = ₹500
+IMPORTANT:
+Do not modify the split database model or split API.
 
 Rules:
 
-* Split amounts must sum EXACTLY to the original transaction amount.
-* Use Decimal for all money calculations.
-* A split must belong to the same authenticated user's transaction.
-* Prevent negative/zero split amounts.
-* Prevent duplicate/invalid category references where applicable.
-* A transaction without splits must continue working exactly as before.
-* Existing transaction APIs must not break.
+1. Transaction amount remains authoritative for total income/expense calculations.
+2. If a transaction has splits, category analytics must use the split amounts/categories instead of the transaction's original category.
+3. If a transaction has no splits, keep using its existing transaction category/amount exactly as before.
+4. Never double-count a transaction.
+5. Merchant analytics must continue using transaction.description + transaction.amount. Do NOT sum split amounts as separate merchant spending.
+6. Monthly PDF category breakdown must also become split-aware.
+7. Forecasting/other analytics that depend on total transaction amounts must continue using the original transaction amount unless there is a clear category-specific reason.
 
-Add:
+Update:
 
-* database model/schema + migration
-* Pydantic models
-* authenticated create/update/delete/list split endpoints
-* service-layer validation
+* dashboard/category analytics
+* merchant analytics only where necessary to guarantee no double-counting
+* monthly PDF category breakdown
+* any shared analytics service that should be split-aware
+
+Add tests for:
+
+* unsplit transaction unchanged
+* split transaction category breakdown
+* mixed split + unsplit transactions
+* exact total preservation
+* merchant total remains transaction amount
+* PDF category totals
+* no double-counting
 * user isolation
-* transaction total validation
-
-Important:
-
-* Existing transaction amount remains authoritative.
-* Do not change the transaction amount when splitting.
-* Category analytics should NOT be changed yet unless required by the model.
-* Do NOT add frontend UI.
-* Do NOT add Gemini.
-* Do NOT modify unrelated features.
-
-Tests:
-
-* create valid split
-* exact total matching
-* under/over total rejection
-* zero/negative amounts
-* update splits
-* delete splits
-* user isolation
-* unauthenticated access
-* transaction without splits still works
 * Decimal precision
-* rollback/atomicity on failed split operations
+
+Do NOT build frontend UI yet.
+Do NOT add Gemini.
+Do NOT change transaction amounts.
+Do NOT modify split validation.
 
 Run the full backend + frontend test suites.
 
 STOP and report:
 
-1. files changed
-2. database design
-3. endpoints
-4. validation rules
-5. migration
-6. tests added
-7. backend/frontend/total tests
-8. limitations
+1. analytics files changed
+2. split-aware calculation logic
+3. double-counting prevention
+4. tests added
+5. backend/frontend/total tests
+6. any remaining limitations
