@@ -8,12 +8,20 @@ vi.mock('../utils/api', () => ({
   getMe: vi.fn().mockRejectedValue(new Error('no auth')),
   logoutUser: vi.fn(),
   getAnalyticsSummary: vi.fn(),
+  getRecurringCalendar: vi.fn().mockResolvedValue({
+    bills: [],
+    start_date: '',
+    end_date: '',
+    total_expected_amount: '0.00',
+    count: 0,
+  }),
 }));
 
 vi.mock('../components/ForecastAlerts', () => ({ default: () => <div data-testid="forecast-alerts" /> }));
 vi.mock('../components/AnomalyAlerts', () => ({ default: () => <div data-testid="anomaly-alerts" /> }));
 vi.mock('../components/SavingsRecommendations', () => ({ default: () => <div data-testid="savings-recommendations" /> }));
 vi.mock('../components/MerchantAnalytics', () => ({ default: () => <div data-testid="merchant-analytics" /> }));
+vi.mock('../components/RecurringBillsCalendar', () => ({ default: () => <div data-testid="recurring-bills-calendar" /> }));
 
 import { getAnalyticsSummary, getMe } from '../utils/api';
 

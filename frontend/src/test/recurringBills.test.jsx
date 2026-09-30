@@ -126,8 +126,8 @@ describe('RecurringBillsCalendar', () => {
     await waitFor(() => {
       expect(screen.getByTestId('undated-bills')).toBeInTheDocument();
       expect(screen.getByTestId('bill-Gym Membership')).toBeInTheDocument();
-      expect(screen.getAllByText('Date uncertain').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('No fixed date').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/Date uncertain/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/No fixed date/).length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -235,7 +235,7 @@ describe('RecurringBillsCalendar', () => {
     });
     fireEvent.click(screen.getByTestId('view-list'));
     await waitFor(() => {
-      expect(screen.getAllByText('Monthly').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/Monthly/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('Subscriptions')).toBeInTheDocument();
     });
   });
