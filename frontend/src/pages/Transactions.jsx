@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { searchTransactions, deleteTransaction, getTransactionsExport } from '../utils/api';
 import TransactionRow from '../components/TransactionRow';
 import EditTransactionModal from '../components/EditTransactionModal';
+import SplitTransactionModal from '../components/SplitTransactionModal';
 import { Filter, ChevronLeft, ChevronRight, RefreshCw, Search, Trash2, Download } from 'lucide-react';
 
 const CATEGORIES = [
@@ -24,6 +25,7 @@ const Transactions = () => {
   const [amountMin, setAmountMin] = useState('');
   const [amountMax, setAmountMax] = useState('');
   const [editingTx, setEditingTx] = useState(null);
+  const [splittingTx, setSplittingTx] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
@@ -221,6 +223,7 @@ const Transactions = () => {
                   <TransactionRow key={tx.id} transaction={tx}
                     onEdit={() => setEditingTx(tx)}
                     onDelete={() => handleDelete(tx.id)}
+                    onSplit={() => setSplittingTx(tx)}
                     isDeleting={deleting === tx.id} />
                 ))
               )}
@@ -250,6 +253,7 @@ const Transactions = () => {
       </div>
 
       {editingTx && <EditTransactionModal transaction={editingTx} onClose={() => setEditingTx(null)} onSaved={() => { setEditingTx(null); fetchTransactions(); }} />}
+      {splittingTx && <SplitTransactionModal transaction={splittingTx} onClose={() => setSplittingTx(null)} onSaved={() => { setSplittingTx(null); fetchTransactions(); }} />}
     </div>
   );
 };

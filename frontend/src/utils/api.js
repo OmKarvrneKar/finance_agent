@@ -289,3 +289,29 @@ export const getSavingsRecommendations = async () => {
   const response = await api.get('/savings-recommendations');
   return response.data;
 };
+
+// Splits
+export const getSplits = async (transactionId) => {
+  const response = await api.get(`/transactions/${transactionId}/splits`);
+  return response.data;
+};
+
+export const getSplitSummary = async (transactionId) => {
+  const response = await api.get(`/transactions/${transactionId}/split-summary`);
+  return response.data;
+};
+
+export const createSplits = async (transactionId, splits) => {
+  const response = await api.post(`/transactions/${transactionId}/splits`, splits);
+  return response.data;
+};
+
+export const updateSplit = async (splitId, data) => {
+  const response = await api.put(`/splits/${splitId}`, data);
+  return response.data;
+};
+
+export const deleteSplit = async (splitId) => {
+  const response = await api.delete(`/splits/${splitId}`);
+  return response.data;
+};

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import CategoryBadge from './CategoryBadge';
-import { Repeat, Pencil, Trash2 } from 'lucide-react';
+import { Repeat, Pencil, Trash2, SplitSquareHorizontal } from 'lucide-react';
 import { markRecurring, unmarkRecurring } from '../utils/api';
 
-const TransactionRow = ({ transaction, onEdit, onDelete, isDeleting }) => {
+const TransactionRow = ({ transaction, onEdit, onDelete, isDeleting, onSplit }) => {
   const [toggling, setToggling] = useState(false);
   const isDebit = transaction.transaction_type === 'debit';
   const amountClass = isDebit ? 'amount-debit' : 'amount-credit';
@@ -82,6 +82,14 @@ const TransactionRow = ({ transaction, onEdit, onDelete, isDeleting }) => {
           >
             <Repeat size={14} />
           </button>
+          {onSplit && (
+            <button onClick={onSplit} title="Split transaction"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '4px', color: 'var(--text-muted)' }}
+              onMouseOver={(e) => e.currentTarget.style.color = 'var(--accent-color)'}
+              onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
+              <SplitSquareHorizontal size={14} />
+            </button>
+          )}
           {onEdit && (
             <button onClick={onEdit} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '4px', color: 'var(--text-muted)' }}
               onMouseOver={(e) => e.currentTarget.style.color = 'var(--accent-color)'}
