@@ -9,6 +9,7 @@ import HealthScoreCard from '../components/HealthScoreCard';
 import SavingsRecommendations from '../components/SavingsRecommendations';
 import MerchantAnalytics from '../components/MerchantAnalytics';
 import RecurringBillsCalendar from '../components/RecurringBillsCalendar';
+import SpendingVelocityCard from '../components/SpendingVelocityCard';
 import { ArrowDownCircle, ArrowUpCircle, Wallet, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
 
 const COLORS = ['#3B82F6', '#059669', '#D97706', '#DC2626', '#7C3AED', '#0284C7', '#C026D3', '#0D9488', '#E11D48'];
@@ -159,6 +160,11 @@ const Dashboard = () => {
       {/* Health Score */}
       <div style={{ marginBottom: '24px' }}>
         <HealthScoreCard />
+      </div>
+
+      {/* Spending Velocity */}
+      <div style={{ marginBottom: '24px' }}>
+        <SpendingVelocityCard />
       </div>
 
       {/* Savings Recommendations */}

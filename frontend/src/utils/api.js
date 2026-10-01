@@ -252,6 +252,12 @@ export const getMerchantAnalytics = async ({ start_date = '', end_date = '', lim
   return response.data;
 };
 
+export const getSpendingVelocity = async ({ window_days = 3 } = {}) => {
+  const params = new URLSearchParams({ window_days: String(window_days) });
+  const response = await api.get(`/analytics/spending-velocity?${params.toString()}`);
+  return response.data;
+};
+
 // Anomalies
 export const getAnomalies = async () => {
   const response = await api.get('/anomalies');

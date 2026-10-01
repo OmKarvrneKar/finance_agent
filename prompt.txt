@@ -1,78 +1,79 @@
-Start Phase 3G — Spending Velocity Detection.
+Continue Phase 3G.
 
-FIRST STEP ONLY: build the deterministic backend/API. Do NOT build frontend yet. Do NOT use Gemini.
+Build ONLY the frontend UI for the existing spending velocity endpoint.
 
-Goal:
-Detect when the user's recent spending pace is unusually high compared with their historical spending pace.
+Endpoint:
+GET /api/analytics/spending-velocity?window_days=N
 
-Add an authenticated endpoint such as:
+Add a compact "Spending Velocity" card to the Dashboard.
 
-GET /api/analytics/spending-velocity?window_days=3
+Show:
 
-Return:
+* current window spending
+* normal/baseline spending
+* velocity ratio
+* percentage change
+* alert level
+* comparison window (for example, last 3 days)
+* baseline methodology in a small tooltip/info area
 
-* current_window_spend
-* baseline_window_spend
-* velocity_ratio
-* percentage_change
-* window_days
-* baseline_method
-* alert_level
-* start_date
-* end_date
+UI behavior:
 
-Rules:
+* normal → neutral/positive presentation
+* elevated → warning presentation
+* high → stronger warning
+* very_high → prominent alert
+* insufficient_data → clearly say there is not enough history instead of showing a misleading ratio
+* no_baseline → clearly explain that a baseline cannot be calculated
 
-* Analyze expense/debit transactions only.
-* Never count income/credits as spending.
-* Use Decimal for monetary calculations.
-* User isolation via authenticated user.
-* Current window = most recent N days.
-* Build a deterministic historical baseline from comparable historical periods.
-* Clearly document the baseline methodology.
-* Require sufficient historical data before producing a strong alert.
-* Do not generate an alert solely because the user spent a large absolute amount.
-* The alert should be based on spending pace relative to the user's own history.
+Controls:
 
-Avoid:
+* allow window_days selection: 1, 3, 7, 14, 30
+* changing the window must call the API again
+* do not calculate velocity or percentage in React
+* display the backend values directly
 
-* Gemini
-* arbitrary hardcoded "3x = bad" logic without documenting it
-* future-date transactions
-* double counting split transactions
-* changing existing transaction data
+States:
 
-For split transactions:
-
-* total spending must remain the original transaction amount.
-* Do not count split rows as separate expenses.
+* loading
+* success
+* insufficient data
+* no baseline
+* API error
+* unauthenticated behavior
 
 Tests:
 
-* normal spending
-* elevated spending
-* very high spending
-* insufficient history
-* zero historical baseline
-* income/credit exclusion
-* date boundaries
-* Decimal precision
-* split transaction no-double-counting
-* user isolation
-* authentication
-* invalid window_days
-* future transactions excluded
+* normal state
+* elevated state
+* high state
+* very_high state
+* insufficient data
+* no baseline
+* ratio/percentage display
+* window selector
+* correct API request
+* loading
+* API error
+* authenticated request
 
-Run full backend + frontend test suites.
+IMPORTANT:
+
+* Do NOT modify the backend velocity algorithm.
+* Do NOT add Gemini.
+* Do NOT add notifications yet.
+* Do NOT modify split handling.
+* Do NOT change existing analytics.
+* Keep the component compact and consistent with the Dashboard.
+
+Run the full backend + frontend test suites.
 
 STOP and report:
 
 1. files changed
-2. endpoint
-3. baseline methodology
-4. velocity calculation
-5. alert thresholds
-6. split handling
-7. tests added
-8. backend/frontend/total tests
-9. limitations
+2. dashboard integration
+3. alert-level UI behavior
+4. window selector
+5. tests added
+6. backend/frontend/total tests
+7. limitations

@@ -15,6 +15,18 @@ vi.mock('../utils/api', () => ({
     total_expected_amount: '0.00',
     count: 0,
   }),
+  getSpendingVelocity: vi.fn().mockResolvedValue({
+    current_window_spend: '0.00',
+    baseline_window_spend: '0.00',
+    velocity_ratio: null,
+    percentage_change: null,
+    window_days: 3,
+    baseline_method: 'test',
+    alert_level: 'insufficient_data',
+    start_date: '',
+    end_date: '',
+    baseline_windows_used: 0,
+  }),
 }));
 
 vi.mock('../components/ForecastAlerts', () => ({ default: () => <div data-testid="forecast-alerts" /> }));
@@ -22,6 +34,7 @@ vi.mock('../components/AnomalyAlerts', () => ({ default: () => <div data-testid=
 vi.mock('../components/SavingsRecommendations', () => ({ default: () => <div data-testid="savings-recommendations" /> }));
 vi.mock('../components/MerchantAnalytics', () => ({ default: () => <div data-testid="merchant-analytics" /> }));
 vi.mock('../components/RecurringBillsCalendar', () => ({ default: () => <div data-testid="recurring-bills-calendar" /> }));
+vi.mock('../components/SpendingVelocityCard', () => ({ default: () => <div data-testid="spending-velocity-card" /> }));
 
 import { getAnalyticsSummary, getMe } from '../utils/api';
 
@@ -67,6 +80,14 @@ describe('Dashboard page', () => {
       expect(screen.getByText('Total Expenses')).toBeInTheDocument();
       expect(screen.getByText('Net Cash Flow')).toBeInTheDocument();
       expect(screen.getByText('Transactions')).toBeInTheDocument();
+    });
+  });
+
+  it('renders spending velocity card on dashboard', async () => {
+    getAnalyticsSummary.mockResolvedValue(mockAnalytics);
+    renderWithAuth(<Dashboard />);
+    await waitFor(() => {
+      expect(screen.getByTestId('spending-velocity-card')).toBeInTheDocument();
     });
   });
 
