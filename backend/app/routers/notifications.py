@@ -9,6 +9,7 @@ from app.database import crud
 from app.database.db import get_db, User
 from app.models import schemas
 from app.services import notifications as notification_service
+from app.services import notification_producers
 
 logger = logging.getLogger(__name__)
 
@@ -134,3 +135,38 @@ def delete_notification(
     notification = _get_owned_notification(db, notification_id, current_user.id)
     crud.delete_notification(db, notification)
     return {"message": "Notification deleted."}
+
+
+# --- Explicit notification producers ---
+# These are opt-in. Nothing generates notifications implicitly on dashboard or
+# analytics read paths, so repeatedly refreshing a page never spams a user.
+# Each sync reuses the existing calculation service unchanged and is
+# deduplicated by event_key, so calling it repeatedly is safe.
+
+
+@router.post("/notifications/sync/budgets")
+def sync_budgets(
+    month: Optional[str] = Query(None, description="Period YYYY-MM (defaults to current month)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return notification_producers.sync_budget_notifications(db, current_user.id, month=month)
+
+
+@router.post("/notifications/sync/velocity")
+def sync_velocity(
+    window_days: int = Query(
+        3, ge=1, le=90, description="Velocity window length in days (1-90)"
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return notification_producers.sync_velocity_notifications(db, current_user.id, window_days=window_days)
+
+
+@router.post("/notifications/sync/anomalies")
+def sync_anomalies(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return notification_producers.sync_anomaly_notifications(db, current_user.id)

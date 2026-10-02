@@ -57,6 +57,7 @@ def get_budget_status(db: Session, user_id: int, month: Optional[str] = None) ->
             msg = f"You are on track for your {b.category} budget."
             
         status_list.append({
+            "budget_id": b.id,
             "category": b.category,
             "monthly_cap": b.monthly_cap,
             "current_spend": current_spend,

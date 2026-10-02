@@ -158,6 +158,7 @@ class SavingsGoalsSummaryResponse(BaseModel):
     overall_progress: float
 
 class BudgetStatusResponse(BaseModel):
+    budget_id: Optional[int] = None
     category: str
     monthly_cap: Decimal
     current_spend: Decimal

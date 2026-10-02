@@ -1,84 +1,82 @@
-Start Phase 3H — Notification System.
+Continue Phase 3H.
 
-FIRST STEP ONLY: build the backend notification infrastructure. Do NOT build frontend yet. Do NOT add email/push/WhatsApp yet.
+Now wire the existing notification system to deterministic backend events.
 
-Create an authenticated, user-scoped notification system.
+Do NOT build frontend yet.
+Do NOT add email/push/WhatsApp/SMS.
+Do NOT use Gemini.
 
-Notification fields should support:
+Connect these existing systems:
 
-* id
-* user_id
-* type
-* title
-* message
-* severity
-* read/unread
-* created_at
-* optional related entity/type + related entity id
-* optional metadata JSON if already supported safely
-
-Initial notification types:
+1. Budget
 
 * budget_threshold
 * budget_exceeded
-* spending_velocity
-* anomaly
+
+2. Spending velocity
+
+* create notification for high / very_high velocity only
+* do not notify for normal/elevated
+
+3. Anomaly detection
+
+* create notification for newly detected anomalies
 
 Requirements:
 
-* Every notification belongs to exactly one user.
-* Users can only read/update/delete their own notifications.
-* Add:
-  GET /api/notifications
-  PATCH /api/notifications/{id}/read
-  PATCH /api/notifications/read-all
-  DELETE /api/notifications/{id}
-* Support unread count.
-* Pagination for notification listing.
-* Newest notifications first.
-* Validate notification type/severity.
-* Use existing authentication/security infrastructure.
-* Do not expose another user's notifications.
+* Reuse existing budget, velocity, and anomaly calculation logic.
+* Do NOT duplicate financial calculations.
+* Notifications must be user-scoped.
+* Use deterministic event_key values.
+* Repeated API calls must NOT create duplicate notifications.
+* The same underlying event should create at most one notification per user.
+* Do not create notifications simply because a dashboard endpoint was requested repeatedly.
+* Do not create notifications for historical events every time analytics are recalculated.
+* Existing analytics responses must continue working exactly as before.
+* Notification failure must NOT break the underlying financial analytics endpoint.
+* Use transactions/rollback safely so notification errors do not corrupt financial data.
 
-IMPORTANT:
+Define stable event keys, for example:
 
-* Do NOT automatically generate notifications on every request.
-* Do NOT add email.
-* Do NOT add browser push.
-* Do NOT add WhatsApp/SMS.
-* Do NOT add Gemini.
-* Do NOT change existing budget/velocity/anomaly algorithms yet.
-* Avoid duplicate notifications for the same event.
-* If an event identifier exists, use it for deduplication.
-* Keep financial calculations deterministic.
+* budget:{budget_id}:threshold:{period}
+* budget:{budget_id}:exceeded:{period}
+* velocity:{window_days}:{window_start}:{window_end}
+* anomaly:{anomaly_id}  (or another stable anomaly identifier if the existing system has one)
+
+Only use identifiers that are actually stable in the existing codebase. Do not invent fake IDs.
 
 Tests:
 
-* authentication
-* user isolation
-* create notification
-* list notifications
-* pagination
-* unread count
-* mark read
-* mark all read
-* delete
-* invalid notification type
-* invalid severity
+* budget threshold notification
+* budget exceeded notification
+* velocity high notification
+* velocity very_high notification
+* normal/elevated velocity creates no notification
+* anomaly notification
 * duplicate prevention
-* ordering
-* empty notification list
+* repeated endpoint calls
+* multiple users get independent notifications
+* notification failure does not break analytics
+* stable event_key behavior
+* existing analytics tests remain passing
 
-Run full backend + frontend test suites.
+IMPORTANT:
+
+* Inspect the existing budget/velocity/anomaly services before modifying them.
+* Reuse their existing calculations.
+* Do NOT alter financial calculation formulas.
+* Do NOT build UI.
+* Do NOT add external notification providers.
+
+Run the full backend + frontend test suites.
 
 STOP and report:
 
-1. database design
-2. migration
-3. endpoints
-4. notification types
-5. deduplication strategy
-6. security/user isolation
-7. tests added
-8. backend/frontend/total tests
-9. limitations
+1. files changed
+2. each notification producer
+3. event_key strategy
+4. duplicate prevention
+5. failure isolation
+6. tests added
+7. backend/frontend/total tests
+8. limitations
