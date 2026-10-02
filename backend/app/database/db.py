@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, Date, DateTime, Numeric, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, Date, DateTime, Numeric, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.orm import sessionmaker
 
@@ -104,6 +104,36 @@ class RevokedToken(Base):
     jti = Column(String, unique=True, index=True, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     revoked_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Notification(Base):
+    """User-scoped notification.
+
+    type: budget_threshold | budget_exceeded | spending_velocity | anomaly
+    severity: info | warning | critical
+
+    event_key enables deterministic deduplication of the same event for the same
+    user. NULL event_key values are treated as distinct by SQLite/Postgres, so
+    notifications without a dedup key are never blocked by the unique constraint.
+    """
+
+    __tablename__ = "notifications"
+    __table_args__ = (
+        UniqueConstraint("user_id", "event_key", name="uq_notifications_user_event_key"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    type = Column(String, nullable=False, index=True)
+    title = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    severity = Column(String, nullable=False, default="info")
+    is_read = Column(Boolean, default=False, nullable=False, index=True)
+    related_entity_type = Column(String, nullable=True)
+    related_entity_id = Column(Integer, nullable=True)
+    event_key = Column(String, nullable=True, index=True)
+    metadata_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 def get_db():
     db = SessionLocal()

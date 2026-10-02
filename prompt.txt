@@ -1,79 +1,84 @@
-Continue Phase 3G.
+Start Phase 3H — Notification System.
 
-Build ONLY the frontend UI for the existing spending velocity endpoint.
+FIRST STEP ONLY: build the backend notification infrastructure. Do NOT build frontend yet. Do NOT add email/push/WhatsApp yet.
 
-Endpoint:
-GET /api/analytics/spending-velocity?window_days=N
+Create an authenticated, user-scoped notification system.
 
-Add a compact "Spending Velocity" card to the Dashboard.
+Notification fields should support:
 
-Show:
+* id
+* user_id
+* type
+* title
+* message
+* severity
+* read/unread
+* created_at
+* optional related entity/type + related entity id
+* optional metadata JSON if already supported safely
 
-* current window spending
-* normal/baseline spending
-* velocity ratio
-* percentage change
-* alert level
-* comparison window (for example, last 3 days)
-* baseline methodology in a small tooltip/info area
+Initial notification types:
 
-UI behavior:
+* budget_threshold
+* budget_exceeded
+* spending_velocity
+* anomaly
 
-* normal → neutral/positive presentation
-* elevated → warning presentation
-* high → stronger warning
-* very_high → prominent alert
-* insufficient_data → clearly say there is not enough history instead of showing a misleading ratio
-* no_baseline → clearly explain that a baseline cannot be calculated
+Requirements:
 
-Controls:
-
-* allow window_days selection: 1, 3, 7, 14, 30
-* changing the window must call the API again
-* do not calculate velocity or percentage in React
-* display the backend values directly
-
-States:
-
-* loading
-* success
-* insufficient data
-* no baseline
-* API error
-* unauthenticated behavior
-
-Tests:
-
-* normal state
-* elevated state
-* high state
-* very_high state
-* insufficient data
-* no baseline
-* ratio/percentage display
-* window selector
-* correct API request
-* loading
-* API error
-* authenticated request
+* Every notification belongs to exactly one user.
+* Users can only read/update/delete their own notifications.
+* Add:
+  GET /api/notifications
+  PATCH /api/notifications/{id}/read
+  PATCH /api/notifications/read-all
+  DELETE /api/notifications/{id}
+* Support unread count.
+* Pagination for notification listing.
+* Newest notifications first.
+* Validate notification type/severity.
+* Use existing authentication/security infrastructure.
+* Do not expose another user's notifications.
 
 IMPORTANT:
 
-* Do NOT modify the backend velocity algorithm.
+* Do NOT automatically generate notifications on every request.
+* Do NOT add email.
+* Do NOT add browser push.
+* Do NOT add WhatsApp/SMS.
 * Do NOT add Gemini.
-* Do NOT add notifications yet.
-* Do NOT modify split handling.
-* Do NOT change existing analytics.
-* Keep the component compact and consistent with the Dashboard.
+* Do NOT change existing budget/velocity/anomaly algorithms yet.
+* Avoid duplicate notifications for the same event.
+* If an event identifier exists, use it for deduplication.
+* Keep financial calculations deterministic.
 
-Run the full backend + frontend test suites.
+Tests:
+
+* authentication
+* user isolation
+* create notification
+* list notifications
+* pagination
+* unread count
+* mark read
+* mark all read
+* delete
+* invalid notification type
+* invalid severity
+* duplicate prevention
+* ordering
+* empty notification list
+
+Run full backend + frontend test suites.
 
 STOP and report:
 
-1. files changed
-2. dashboard integration
-3. alert-level UI behavior
-4. window selector
-5. tests added
-6. backend/frontend/total tests
-7. limitations
+1. database design
+2. migration
+3. endpoints
+4. notification types
+5. deduplication strategy
+6. security/user isolation
+7. tests added
+8. backend/frontend/total tests
+9. limitations

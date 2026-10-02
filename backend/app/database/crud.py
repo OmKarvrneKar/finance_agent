@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from .db import Transaction, TransactionSplit, SavingsGoal
+from .db import Transaction, TransactionSplit, SavingsGoal, Notification
 from typing import List, Dict, Any, Tuple, Optional
 from decimal import Decimal
 from datetime import date, datetime
