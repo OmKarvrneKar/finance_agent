@@ -157,6 +157,32 @@ class SavingsGoalsSummaryResponse(BaseModel):
     total_saved: Decimal
     overall_progress: float
 
+class GoalProgressResponse(BaseModel):
+    """Deterministic progress + projection for one savings goal.
+
+    Money fields are Decimal and serialize as strings. ``monthly_contribution_rate``
+    and the projection fields stay null when the underlying history cannot
+    support them, which is signalled by ``projection_status``.
+    """
+
+    goal_id: int
+    goal_name: str
+    target_amount: Decimal
+    current_amount: Decimal
+    remaining_amount: Decimal
+    progress_percent: float
+    target_date: Optional[str] = None
+    monthly_contribution_rate: Optional[Decimal] = None
+    average_monthly_contribution: Optional[Decimal] = None
+    contribution_count: int = 0
+    projected_completion_date: Optional[str] = None
+    projected_months_remaining: Optional[int] = None
+    projection_status: str
+
+class GoalsProgressListResponse(BaseModel):
+    goals: List[GoalProgressResponse]
+    total: int
+
 class BudgetStatusResponse(BaseModel):
     budget_id: Optional[int] = None
     category: str

@@ -8,8 +8,10 @@ from app.database import crud
 from app.models.schemas import (
     SavingsGoalCreate, SavingsGoalUpdate, SavingsGoalContribution,
     SavingsGoalResponse, SavingsGoalsSummaryResponse,
+    GoalProgressResponse, GoalsProgressListResponse,
 )
 from app.auth import get_current_user
+from app.services import goal_progress
 
 router = APIRouter()
 
@@ -92,6 +94,34 @@ def goals_summary(
     current_user: User = Depends(get_current_user),
 ):
     return crud.get_savings_goals_summary(db, current_user.id)
+
+
+@router.get("/goals/progress", response_model=GoalsProgressListResponse)
+def goals_progress(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Deterministic progress + projection for every goal owned by this user.
+
+    Read-only: computing a projection never modifies stored goal values.
+    """
+    goals = goal_progress.get_all_goals_progress(db, current_user.id)
+    return {"goals": goals, "total": len(goals)}
+
+
+# Declared before "/goals/{goal_id}" so the literal path is not captured as an
+# int goal_id.
+@router.get("/goals/{goal_id}/progress", response_model=GoalProgressResponse)
+def goal_progress_detail(
+    goal_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Deterministic progress + projection for a single owned goal."""
+    result = goal_progress.get_goal_progress(db, current_user.id, goal_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Goal not found.")
+    return result
 
 
 @router.get("/goals/{goal_id}", response_model=SavingsGoalResponse)

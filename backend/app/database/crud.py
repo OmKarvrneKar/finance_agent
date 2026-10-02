@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from .db import Transaction, TransactionSplit, SavingsGoal, Notification
+from .db import (
+    Transaction, TransactionSplit, SavingsGoal, SavingsGoalContribution, Notification,
+)
 from typing import List, Dict, Any, Tuple, Optional
 from decimal import Decimal
 from datetime import date, datetime
@@ -307,9 +309,54 @@ def contribute_to_savings_goal(db: Session, goal_id: int, user_id: int, amount: 
     goal.current_amount = (goal.current_amount or Decimal('0')) + amount
     if goal.current_amount >= goal.target_amount:
         goal.status = 'completed'
+    # Record when the money actually arrived so a contribution rate can be
+    # measured later. The aggregate above remains the progress source of truth.
+    db.add(SavingsGoalContribution(goal_id=goal.id, user_id=user_id, amount=amount))
     db.commit()
     db.refresh(goal)
     return goal
+
+
+def add_savings_goal_contribution(
+    db: Session,
+    goal_id: int,
+    user_id: int,
+    amount: Decimal,
+    contributed_at: Optional[datetime] = None,
+) -> Optional[SavingsGoalContribution]:
+    """Append a contribution ledger row for an existing, owned goal."""
+    goal = db.query(SavingsGoal).filter(
+        SavingsGoal.id == goal_id,
+        SavingsGoal.user_id == user_id,
+    ).first()
+    if not goal:
+        return None
+    contribution = SavingsGoalContribution(
+        goal_id=goal_id,
+        user_id=user_id,
+        amount=amount,
+    )
+    if contributed_at is not None:
+        contribution.contributed_at = contributed_at
+    db.add(contribution)
+    db.commit()
+    db.refresh(contribution)
+    return contribution
+
+
+def get_savings_goal_contributions(
+    db: Session, goal_id: int, user_id: int
+) -> List[SavingsGoalContribution]:
+    """Contribution history for one owned goal, oldest first."""
+    return (
+        db.query(SavingsGoalContribution)
+        .filter(
+            SavingsGoalContribution.goal_id == goal_id,
+            SavingsGoalContribution.user_id == user_id,
+        )
+        .order_by(SavingsGoalContribution.contributed_at.asc())
+        .all()
+    )
 
 
 def get_savings_goals_summary(db: Session, user_id: int) -> Dict[str, Any]:

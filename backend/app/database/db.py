@@ -65,6 +65,24 @@ class SavingsGoal(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
+
+class SavingsGoalContribution(Base):
+    """Append-only ledger of money actually added to a savings goal.
+
+    ``SavingsGoal.current_amount`` remains the aggregate source of truth for
+    progress. This table exists purely to date contributions so a contribution
+    *rate* can be measured instead of guessed. Rows are only written when a user
+    really contributes; history is never back-filled or inferred.
+    """
+
+    __tablename__ = "savings_goal_contributions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    goal_id = Column(Integer, ForeignKey("savings_goals.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    amount = Column(Numeric(12, 2), nullable=False)
+    contributed_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
 class PendingReceipt(Base):
     __tablename__ = "pending_receipts"
     id = Column(Integer, primary_key=True, index=True)

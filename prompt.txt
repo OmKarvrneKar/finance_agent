@@ -1,91 +1,77 @@
-Finish Phase 3H with the frontend notification center.
+Start Phase 3I — Goal Tracking Dashboard.
 
-Use the existing notification APIs. Do NOT modify the notification producers.
+FIRST STEP ONLY: improve the existing savings-goal backend with deterministic goal-progress analytics.
 
-Requirements:
+Do NOT build frontend yet.
+Do NOT use Gemini.
 
-Add a notification bell/icon to the main navigation.
+Use the existing savings-goal model/data.
 
-Show:
+For each authenticated user's goal, provide:
 
-* unread notification count
-* notification dropdown/panel
-* notification title
-* message
-* severity
-* timestamp
-* read/unread state
+* goal id
+* goal name
+* target amount
+* current amount
+* remaining amount
+* progress percentage
+* target date if available
+* monthly contribution rate
+* average monthly contribution
+* projected completion date
+* projected months remaining
+* projection status
 
-Actions:
+Rules:
 
-* mark individual notification as read
-* mark individual notification as unread if supported
-* mark all as read
-* delete notification
-* view more/pagination
-* filter by notification type
-* unread-only filter
+* Use Decimal for all money calculations.
+* Never modify the goal target/current amount as part of projection.
+* Progress must be based on actual stored goal values.
+* Calculate contribution rate from existing historical contribution data if available.
+* If insufficient contribution history exists, return projection_status = insufficient_data and DO NOT invent a completion date.
+* If contribution rate is zero/negative, return projection_status = no_progress and no fabricated completion date.
+* If target is already reached, return projection_status = completed.
+* Respect target date if one exists; do not claim a projection beyond what the existing data can support.
+* User isolation is mandatory.
 
-Notification types:
-
-* budget_threshold
-* budget_exceeded
-* spending_velocity
-* anomaly
-
-Severity:
-
-* info
-* warning
-* critical
-
-UX:
-
-* loading state
-* empty state
-* API error state
-* unread badge
-* clear visual distinction between read/unread
-* responsive behavior
-* reuse existing application styling/components
-* timestamps should use existing date utilities
-
-IMPORTANT:
-
-* Do NOT generate notifications from frontend.
-* Do NOT call sync endpoints automatically on every render.
-* Do NOT calculate financial values in React.
-* Do NOT add email/push/WhatsApp/SMS.
-* Do NOT modify backend notification logic.
-* Do NOT modify budget/velocity/anomaly calculations.
+Add or extend an authenticated endpoint for goal progress.
 
 Tests:
 
-* bell renders
-* unread count
-* notification list
-* read/unread state
-* mark read
-* mark unread
-* mark all read
-* delete
-* pagination
-* type filter
-* unread-only filter
-* loading
-* empty
-* error
-* API failure handling
-* authenticated requests
+* zero progress
+* partial progress
+* 100% completed
+* remaining amount
+* contribution rate
+* sufficient history
+* insufficient history
+* zero contribution
+* negative/invalid contribution
+* projection calculation
+* target date handling
+* Decimal precision
+* user isolation
+* authentication
+* multiple goals
+
+IMPORTANT:
+
+* Reuse existing goal data/services.
+* Do NOT invent contribution records.
+* Do NOT modify unrelated analytics.
+* Do NOT add frontend.
+* Do NOT add notifications yet.
+* Do NOT add Gemini.
 
 Run the full backend + frontend test suites.
 
 STOP and report:
 
 1. files changed
-2. navigation integration
-3. notification UX
-4. filters/actions
-5. tests added
-6. backend/frontend/total tests
-7. limitations
+2. endpoint
+3. projection methodology
+4. contribution-rate methodology
+5. target-date behavior
+6. tests added
+7. backend/frontend/total tests
+8. limitations
