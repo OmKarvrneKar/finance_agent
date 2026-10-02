@@ -322,6 +322,37 @@ export const deleteSplit = async (splitId) => {
   return response.data;
 };
 
+// Notifications
+// Read-only + explicit user actions only. Nothing here generates
+// notifications; producers run on the backend and are never called on render.
+export const getNotifications = async ({ page = 1, limit = 20, unread_only = false, type = '' } = {}) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (unread_only) params.append('unread_only', 'true');
+  if (type) params.append('type', type);
+  const response = await api.get(`/notifications?${params.toString()}`);
+  return response.data;
+};
+
+export const markNotificationRead = async (id) => {
+  const response = await api.patch(`/notifications/${id}/read`);
+  return response.data;
+};
+
+export const markNotificationUnread = async (id) => {
+  const response = await api.patch(`/notifications/${id}/unread`);
+  return response.data;
+};
+
+export const markAllNotificationsRead = async () => {
+  const response = await api.patch('/notifications/read-all');
+  return response.data;
+};
+
+export const deleteNotification = async (id) => {
+  const response = await api.delete(`/notifications/${id}`);
+  return response.data;
+};
+
 // Recurring Bills Calendar
 export const getRecurringCalendar = async ({ start_date = '', end_date = '' } = {}) => {
   const params = new URLSearchParams();

@@ -29,6 +29,40 @@ export const formatDateDisplay = (iso) => {
   });
 };
 
+// Accepts a full ISO timestamp (e.g. "2026-10-02T14:30:00") as well as a
+// bare date, since API responses carry datetime values.
+export const parseISODateTime = (value) => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+export const formatDateTimeDisplay = (value) => {
+  const d = parseISODateTime(value);
+  if (!d) return null;
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
+
+export const formatRelativeTime = (value) => {
+  const d = parseISODateTime(value);
+  if (!d) return null;
+  const diffMs = Date.now() - d.getTime();
+  const diffMinutes = Math.round(diffMs / 60000);
+  if (diffMinutes < 1) return 'just now';
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.round(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return formatDateDisplay(value.slice(0, 10));
+};
+
 export const formatCurrency = (amount) =>
   `₹${Number(amount || 0).toLocaleString('en-IN', {
     minimumFractionDigits: 2,

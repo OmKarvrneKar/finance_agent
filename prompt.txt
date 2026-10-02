@@ -1,82 +1,91 @@
-Continue Phase 3H.
+Finish Phase 3H with the frontend notification center.
 
-Now wire the existing notification system to deterministic backend events.
-
-Do NOT build frontend yet.
-Do NOT add email/push/WhatsApp/SMS.
-Do NOT use Gemini.
-
-Connect these existing systems:
-
-1. Budget
-
-* budget_threshold
-* budget_exceeded
-
-2. Spending velocity
-
-* create notification for high / very_high velocity only
-* do not notify for normal/elevated
-
-3. Anomaly detection
-
-* create notification for newly detected anomalies
+Use the existing notification APIs. Do NOT modify the notification producers.
 
 Requirements:
 
-* Reuse existing budget, velocity, and anomaly calculation logic.
-* Do NOT duplicate financial calculations.
-* Notifications must be user-scoped.
-* Use deterministic event_key values.
-* Repeated API calls must NOT create duplicate notifications.
-* The same underlying event should create at most one notification per user.
-* Do not create notifications simply because a dashboard endpoint was requested repeatedly.
-* Do not create notifications for historical events every time analytics are recalculated.
-* Existing analytics responses must continue working exactly as before.
-* Notification failure must NOT break the underlying financial analytics endpoint.
-* Use transactions/rollback safely so notification errors do not corrupt financial data.
+Add a notification bell/icon to the main navigation.
 
-Define stable event keys, for example:
+Show:
 
-* budget:{budget_id}:threshold:{period}
-* budget:{budget_id}:exceeded:{period}
-* velocity:{window_days}:{window_start}:{window_end}
-* anomaly:{anomaly_id}  (or another stable anomaly identifier if the existing system has one)
+* unread notification count
+* notification dropdown/panel
+* notification title
+* message
+* severity
+* timestamp
+* read/unread state
 
-Only use identifiers that are actually stable in the existing codebase. Do not invent fake IDs.
+Actions:
 
-Tests:
+* mark individual notification as read
+* mark individual notification as unread if supported
+* mark all as read
+* delete notification
+* view more/pagination
+* filter by notification type
+* unread-only filter
 
-* budget threshold notification
-* budget exceeded notification
-* velocity high notification
-* velocity very_high notification
-* normal/elevated velocity creates no notification
-* anomaly notification
-* duplicate prevention
-* repeated endpoint calls
-* multiple users get independent notifications
-* notification failure does not break analytics
-* stable event_key behavior
-* existing analytics tests remain passing
+Notification types:
+
+* budget_threshold
+* budget_exceeded
+* spending_velocity
+* anomaly
+
+Severity:
+
+* info
+* warning
+* critical
+
+UX:
+
+* loading state
+* empty state
+* API error state
+* unread badge
+* clear visual distinction between read/unread
+* responsive behavior
+* reuse existing application styling/components
+* timestamps should use existing date utilities
 
 IMPORTANT:
 
-* Inspect the existing budget/velocity/anomaly services before modifying them.
-* Reuse their existing calculations.
-* Do NOT alter financial calculation formulas.
-* Do NOT build UI.
-* Do NOT add external notification providers.
+* Do NOT generate notifications from frontend.
+* Do NOT call sync endpoints automatically on every render.
+* Do NOT calculate financial values in React.
+* Do NOT add email/push/WhatsApp/SMS.
+* Do NOT modify backend notification logic.
+* Do NOT modify budget/velocity/anomaly calculations.
+
+Tests:
+
+* bell renders
+* unread count
+* notification list
+* read/unread state
+* mark read
+* mark unread
+* mark all read
+* delete
+* pagination
+* type filter
+* unread-only filter
+* loading
+* empty
+* error
+* API failure handling
+* authenticated requests
 
 Run the full backend + frontend test suites.
 
 STOP and report:
 
 1. files changed
-2. each notification producer
-3. event_key strategy
-4. duplicate prevention
-5. failure isolation
-6. tests added
-7. backend/frontend/total tests
-8. limitations
+2. navigation integration
+3. notification UX
+4. filters/actions
+5. tests added
+6. backend/frontend/total tests
+7. limitations

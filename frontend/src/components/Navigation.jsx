@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Wallet, Upload, List, MessageSquare, PieChart, Repeat, Target, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 import './Navigation.css';
 
 const Navigation = () => {
@@ -46,10 +47,13 @@ const Navigation = () => {
                 <span>Goals</span>
               </NavLink>
             </div>
-            <button onClick={logout} className="nav-link logout-btn" style={{ cursor: 'pointer', background: 'none', border: 'none' }}>
-              <LogOut size={18} />
-              <span>{user?.email?.split('@')[0]}</span>
-            </button>
+            <div className="navbar-right">
+              <NotificationBell />
+              <button onClick={logout} className="nav-link logout-btn" style={{ cursor: 'pointer', background: 'none', border: 'none' }}>
+                <LogOut size={18} />
+                <span>{user?.email?.split('@')[0]}</span>
+              </button>
+            </div>
           </>
         )}
       </div>
