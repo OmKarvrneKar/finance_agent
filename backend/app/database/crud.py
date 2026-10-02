@@ -449,3 +449,113 @@ def get_splits_by_transaction_ids(
             'amount': s.amount,
         })
     return result
+
+
+# --- Notification CRUD ---
+
+def get_notifications_paginated(
+    db: Session,
+    user_id: int,
+    page: int = 1,
+    limit: int = 20,
+    unread_only: bool = False,
+    type_filter: Optional[str] = None,
+) -> Tuple[List[Notification], int]:
+    """List a user's notifications, newest first."""
+    query = db.query(Notification).filter(Notification.user_id == user_id)
+    if unread_only:
+        query = query.filter(Notification.is_read == False)  # noqa: E712
+    if type_filter:
+        query = query.filter(Notification.type == type_filter)
+    total = query.count()
+    notifications = (
+        query.order_by(Notification.created_at.desc(), Notification.id.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .all()
+    )
+    return notifications, total
+
+
+def get_notification(
+    db: Session, notification_id: int, user_id: int
+) -> Optional[Notification]:
+    return db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.user_id == user_id,
+    ).first()
+
+
+def get_notification_by_event_key(
+    db: Session, user_id: int, event_key: Optional[str]
+) -> Optional[Notification]:
+    if not event_key:
+        return None
+    return db.query(Notification).filter(
+        Notification.user_id == user_id,
+        Notification.event_key == event_key,
+    ).first()
+
+
+def create_notification(
+    db: Session,
+    user_id: int,
+    type: str,
+    title: str,
+    message: str,
+    severity: str = "info",
+    related_entity_type: Optional[str] = None,
+    related_entity_id: Optional[int] = None,
+    event_key: Optional[str] = None,
+    metadata_json: Optional[str] = None,
+) -> Notification:
+    notification = Notification(
+        user_id=user_id,
+        type=type,
+        title=title,
+        message=message,
+        severity=severity,
+        is_read=False,
+        related_entity_type=related_entity_type,
+        related_entity_id=related_entity_id,
+        event_key=event_key,
+        metadata_json=metadata_json,
+    )
+    db.add(notification)
+    db.commit()
+    db.refresh(notification)
+    return notification
+
+
+def set_notification_read(
+    db: Session, notification: Notification, is_read: bool = True
+) -> Notification:
+    notification.is_read = is_read
+    db.commit()
+    db.refresh(notification)
+    return notification
+
+
+def mark_all_notifications_read(db: Session, user_id: int) -> int:
+    """Mark every unread notification for the user as read. Returns count updated."""
+    unread = db.query(Notification).filter(
+        Notification.user_id == user_id,
+        Notification.is_read == False,  # noqa: E712
+    )
+    count = unread.count()
+    unread.update({Notification.is_read: True}, synchronize_session=False)
+    db.commit()
+    return count
+
+
+def delete_notification(db: Session, notification: Notification) -> bool:
+    db.delete(notification)
+    db.commit()
+    return True
+
+
+def count_unread_notifications(db: Session, user_id: int) -> int:
+    return db.query(Notification).filter(
+        Notification.user_id == user_id,
+        Notification.is_read == False,  # noqa: E712
+    ).count()

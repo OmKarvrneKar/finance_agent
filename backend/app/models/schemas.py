@@ -405,3 +405,71 @@ class SpendingVelocityResponse(BaseModel):
     end_date: str
     baseline_windows_used: int = 0
     history_start_date: Optional[str] = None
+
+
+# Notification schemas
+
+NOTIFICATION_TYPES = {"budget_threshold", "budget_exceeded", "spending_velocity", "anomaly"}
+NOTIFICATION_SEVERITIES = {"info", "warning", "critical"}
+
+
+class NotificationCreate(BaseModel):
+    type: str
+    title: str
+    message: str
+    severity: str = "info"
+    related_entity_type: Optional[str] = None
+    related_entity_id: Optional[int] = None
+    event_key: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, v: str) -> str:
+        if v not in NOTIFICATION_TYPES:
+            raise ValueError(
+                f"Invalid notification type '{v}'. Must be one of: {sorted(NOTIFICATION_TYPES)}"
+            )
+        return v
+
+    @field_validator("severity")
+    @classmethod
+    def validate_severity(cls, v: str) -> str:
+        if v not in NOTIFICATION_SEVERITIES:
+            raise ValueError(
+                f"Invalid notification severity '{v}'. Must be one of: {sorted(NOTIFICATION_SEVERITIES)}"
+            )
+        return v
+
+    @field_validator("title", "message")
+    @classmethod
+    def validate_not_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Field must not be empty.")
+        return v.strip()
+
+
+class NotificationResponse(BaseModel):
+    id: int
+    user_id: int
+    type: str
+    title: str
+    message: str
+    severity: str
+    is_read: bool
+    created_at: datetime
+    related_entity_type: Optional[str] = None
+    related_entity_id: Optional[int] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+
+
+class NotificationListResponse(BaseModel):
+    notifications: List[NotificationResponse]
+    total: int
+    page: int
+    limit: int
+    pages: int
+    unread_count: int
