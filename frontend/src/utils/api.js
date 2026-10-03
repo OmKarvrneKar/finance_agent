@@ -361,11 +361,6 @@ export const getGoalProgress = async () => {
   return response.data;
 };
 
-export const getGoalProgressDetail = async (id) => {
-  const response = await api.get(`/goals/${id}/progress`);
-  return response.data;
-};
-
 // Recurring Bills Calendar
 export const getRecurringCalendar = async ({ start_date = '', end_date = '' } = {}) => {
   const params = new URLSearchParams();

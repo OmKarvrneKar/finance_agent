@@ -79,10 +79,9 @@ const FALLBACK_STATUS = {
   message: 'Projection status was not recognised.',
 };
 
-// The backend clamps progress to 0-100 and sends a number, so this is a plain
-// passthrough for rendering rather than a recalculation.
-const percentLabel = (value) =>
-  `${Number(value ?? 0).toFixed(Number(value ?? 0) % 1 === 0 ? 0 : 2)}%`;
+// The backend clamps progress to 0-100 and sends a number. This is a raw
+// passthrough for display: no rounding or recalculation happens here.
+const percentLabel = (value) => `${value ?? 0}%`;
 
 const GoalTrackingDashboard = ({ refreshKey = 0 }) => {
   const [goals, setGoals] = useState([]);
@@ -172,7 +171,7 @@ const GoalTrackingDashboard = ({ refreshKey = 0 }) => {
         <h3 className="goal-tracking-title">
           <Target size={20} /> Goal Tracking
         </h3>
-        <span className="goal-tracking-count">
+        <span className="goal-tracking-count" data-testid="goal-tracking-count">
           {goals.length} goal{goals.length === 1 ? '' : 's'}
         </span>
       </div>

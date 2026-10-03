@@ -1,101 +1,42 @@
-Continue Phase 3I.
+Do a small Phase 3I cleanup only.
 
-Build ONLY the frontend Goal Tracking Dashboard using the existing goal progress APIs.
+Problem:
+The new Goal Progress service is the correct source of truth, but the legacy goal response still calculates `projected_completion` using the old `_compute_progress` logic.
 
-Do NOT modify the backend projection logic.
-Do NOT use Gemini.
-Do NOT add notifications.
+Goal:
+Make the legacy `projected_completion` value delegate to/reuse the new goal progress service so there is ONE projection methodology.
 
-Use:
-GET /api/goals/progress
-and the existing goal APIs where needed.
+Requirements:
 
-Create a Goal Tracking section/card showing every user's savings goal.
-
-For each goal display:
-
-* goal name
-* target amount
-* current amount
-* remaining amount
-* progress percentage
-* progress bar
-* monthly contribution rate
-* average monthly contribution
-* projected completion date when available
-* projected months remaining when available
-* projection status
-* target date when available
-
-Projection statuses:
-
-* completed
-* no_progress
-* insufficient_data
-* on_track
-* behind
-* no_target_date
-
-IMPORTANT:
-Do not invent a completion date.
-If insufficient_data:
-explain that more contribution history is required.
-If no_progress:
-clearly show that no reliable completion projection is available.
-If completed:
-clearly show goal completed.
-If on_track/behind:
-show projected date and target date.
-
-UX:
-
-* clean dashboard cards
-* progress bars
-* responsive layout
-* loading state
-* empty state
-* API error state
-* clear currency formatting
-* reuse existing application styling/components
-* don't overload the main dashboard
-
-If contribution history is available, allow the user to see the contribution-related information, but do NOT build a separate contribution-management system yet.
+* Do NOT change the new goal-progress calculation.
+* Do NOT change the goal database model.
+* Do NOT change the frontend.
+* Do NOT change API endpoint names.
+* Preserve existing response shapes.
+* Preserve existing behavior where projection is unavailable.
+* Do not introduce circular imports.
+* Avoid N+1 queries where possible.
+* Keep Decimal/date calculations in the existing service.
 
 Tests:
 
-* goal rendering
-* progress percentage
-* remaining amount
-* contribution rate
-* projected date
-* completed state
-* no_progress state
-* insufficient_data state
-* on_track state
-* behind state
-* no_target_date state
-* loading
-* empty
-* API error
-* authenticated request
+* legacy goal endpoint returns the same projected completion as /api/goals/{id}/progress
+* insufficient_data
+* no_progress
+* completed goal
+* on_track
+* behind
+* no_target_date
+* user isolation
+* existing goal tests remain passing
+* existing progress tests remain passing
 
-IMPORTANT:
-
-* Do NOT calculate financial metrics in React.
-* Display backend values directly.
-* Do NOT modify old goal APIs.
-* Do NOT change projection methodology.
-* Do NOT add notifications.
-* Do NOT add Gemini.
-
-Run the full backend + frontend test suites.
+Run the full backend + frontend test suites and npm build.
 
 STOP and report:
 
 1. files changed
-2. dashboard integration
-3. goal states
-4. projection display
-5. tests added
-6. backend/frontend/total tests
-7. limitations
+2. how the legacy endpoint now delegates
+3. tests added/updated
+4. backend/frontend/total tests
+5. any remaining projection inconsistencies

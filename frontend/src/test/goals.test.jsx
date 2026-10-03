@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
 import Goals from '../pages/Goals';
@@ -15,10 +15,9 @@ vi.mock('../utils/api', () => ({
   contributeToGoal: vi.fn(),
   getGoalsSummary: vi.fn(),
   getGoalProgress: vi.fn().mockResolvedValue({ goals: [], total: 0 }),
-  getGoalProgressDetail: vi.fn(),
 }));
 
-import { getSavingsGoals, createSavingsGoal, deleteSavingsGoal, contributeToGoal, getGoalsSummary, getMe } from '../utils/api';
+import { getSavingsGoals, createSavingsGoal, deleteSavingsGoal, contributeToGoal, getGoalsSummary, getMe, getGoalProgress } from '../utils/api';
 
 const mockGoal = (overrides = {}) => ({
   id: 1,
@@ -165,6 +164,68 @@ describe('Goals page', () => {
     renderWithAuth(<Goals />);
     await waitFor(() => {
       expect(screen.getByText('Failed to load savings goals')).toBeInTheDocument();
+    });
+  });
+
+  describe('goal tracking dashboard integration', () => {
+    const progressPayload = {
+      goals: [
+        {
+          goal_id: 1,
+          goal_name: 'Emergency Fund',
+          target_amount: '100000.00',
+          current_amount: '25000.00',
+          remaining_amount: '75000.00',
+          progress_percent: 25,
+          target_date: '2027-06-01',
+          monthly_contribution_rate: '5000.00',
+          average_monthly_contribution: '2500.00',
+          contribution_count: 4,
+          projected_completion_date: '2027-02-01',
+          projected_months_remaining: 4,
+          projection_status: 'on_track',
+        },
+      ],
+      total: 1,
+    };
+
+    it('renders the tracking dashboard on the goals page', async () => {
+      getSavingsGoals.mockResolvedValue([mockGoal()]);
+      getGoalsSummary.mockResolvedValue(mockSummary);
+      getGoalProgress.mockResolvedValue(progressPayload);
+      renderWithAuth(<Goals />);
+
+      await waitFor(() => expect(screen.getByTestId('goal-tracking')).toBeInTheDocument());
+      expect(screen.getByTestId('goal-status-1')).toHaveTextContent('On track');
+    });
+
+    it('does not render the tracking section while the page itself is loading', async () => {
+      getSavingsGoals.mockReturnValue(new Promise(() => {}));
+      getGoalsSummary.mockReturnValue(new Promise(() => {}));
+      renderWithAuth(<Goals />);
+
+      // Flush AuthProvider's own resolution so the loading assertion is not racing it.
+      await act(async () => {});
+      expect(screen.queryByTestId('goal-tracking')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('goal-tracking-loading')).not.toBeInTheDocument();
+    });
+
+    it('refetches progress after a contribution is recorded', async () => {
+      getSavingsGoals.mockResolvedValue([mockGoal()]);
+      getGoalsSummary.mockResolvedValue(mockSummary);
+      contributeToGoal.mockResolvedValue({});
+      getGoalProgress.mockResolvedValue(progressPayload);
+      renderWithAuth(<Goals />);
+
+      await waitFor(() => expect(getGoalProgress).toHaveBeenCalledTimes(1));
+
+      fireEvent.click(screen.getByText('Contribute'));
+      fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '5000' } });
+      fireEvent.click(screen.getByText('Add Contribution'));
+
+      await waitFor(() => expect(contributeToGoal).toHaveBeenCalledWith(1, '5000'));
+      // The read-only projection must pick up the new contribution immediately.
+      await waitFor(() => expect(getGoalProgress).toHaveBeenCalledTimes(2));
     });
   });
 });

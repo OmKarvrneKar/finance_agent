@@ -8,7 +8,6 @@ vi.mock('../utils/api', () => ({
   getMe: vi.fn().mockRejectedValue(new Error('no auth')),
   logoutUser: vi.fn(),
   getGoalProgress: vi.fn(),
-  getGoalProgressDetail: vi.fn(),
 }));
 
 import { getGoalProgress, getMe } from '../utils/api';
