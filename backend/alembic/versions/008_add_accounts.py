@@ -38,9 +38,19 @@ def upgrade() -> None:
         sa.Column('name', sa.String(), nullable=False),
         sa.Column('account_type', sa.String(), nullable=False, index=True),
         sa.Column('institution_name', sa.String(), nullable=True),
-        # Length 4 is enforced by the column as well as by request validation,
-        # so a full account number cannot be stored even via raw SQL.
+        # SQLite ignores VARCHAR(length), so "four digits only" and the allowed
+        # account types are enforced by CHECK constraints rather than by the
+        # column type. This is a privacy guarantee, so it is enforced in the
+        # database as well as in request validation.
         sa.Column('last4', sa.String(length=4), nullable=True),
+        sa.CheckConstraint(
+            'last4 IS NULL OR length(last4) = 4',
+            name='ck_accounts_last4_four_digits',
+        ),
+        sa.CheckConstraint(
+            "account_type IN ('bank', 'credit_card', 'cash', 'wallet', 'investment', 'other')",
+            name='ck_accounts_account_type',
+        ),
         sa.Column('currency', sa.String(), nullable=False, server_default='INR'),
         sa.Column('opening_balance', sa.Numeric(12, 2), nullable=False, server_default='0'),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.true(), index=True),

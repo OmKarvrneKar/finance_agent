@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, Date, DateTime, Numeric, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, Date, DateTime, Numeric, ForeignKey, Text, UniqueConstraint, CheckConstraint
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.orm import sessionmaker
 
@@ -59,6 +59,20 @@ class Account(Base):
     """
 
     __tablename__ = "accounts"
+    # SQLite does not enforce VARCHAR(length), so the "only four digits" rule is
+    # enforced by these constraints as well as by request validation. Defence in
+    # depth matters here because the rule is a privacy guarantee, not a
+    # formatting preference.
+    __table_args__ = (
+        CheckConstraint(
+            "last4 IS NULL OR length(last4) = 4",
+            name="ck_accounts_last4_four_digits",
+        ),
+        CheckConstraint(
+            "account_type IN ('bank', 'credit_card', 'cash', 'wallet', 'investment', 'other')",
+            name="ck_accounts_account_type",
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
