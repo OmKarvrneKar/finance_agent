@@ -14,6 +14,8 @@ vi.mock('../utils/api', () => ({
   deleteSavingsGoal: vi.fn(),
   contributeToGoal: vi.fn(),
   getGoalsSummary: vi.fn(),
+  getGoalProgress: vi.fn().mockResolvedValue({ goals: [], total: 0 }),
+  getGoalProgressDetail: vi.fn(),
 }));
 
 import { getSavingsGoals, createSavingsGoal, deleteSavingsGoal, contributeToGoal, getGoalsSummary, getMe } from '../utils/api';

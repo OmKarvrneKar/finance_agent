@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSavingsGoals, createSavingsGoal, updateSavingsGoal, deleteSavingsGoal, contributeToGoal, getGoalsSummary } from '../utils/api';
+import GoalTrackingDashboard from '../components/GoalTrackingDashboard';
 import { Target, Plus, Pencil, Trash2, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
 
 const STATUS_COLORS = {
@@ -18,6 +19,8 @@ const Goals = () => {
   const [contributeModal, setContributeModal] = useState(null);
   const [form, setForm] = useState({ name: '', target_amount: '', target_date: '', description: '' });
   const [contributeAmount, setContributeAmount] = useState('');
+  // Bumped after any mutation so the read-only progress dashboard refetches.
+  const [progressRefreshKey, setProgressRefreshKey] = useState(0);
 
   const loadData = async () => {
     try {
@@ -36,6 +39,12 @@ const Goals = () => {
     }
   };
 
+  // Goal create/edit/delete/contribute all change what the progress API reports.
+  const reloadAll = async () => {
+    await loadData();
+    setProgressRefreshKey((k) => k + 1);
+  };
+
   useEffect(() => { loadData(); }, []);
 
   const handleCreate = async (e) => {
@@ -50,7 +59,7 @@ const Goals = () => {
       await createSavingsGoal(payload);
       setForm({ name: '', target_amount: '', target_date: '', description: '' });
       setShowForm(false);
-      loadData();
+      reloadAll();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to create goal');
     }
@@ -67,7 +76,7 @@ const Goals = () => {
       });
       setEditingGoal(null);
       setForm({ name: '', target_amount: '', target_date: '', description: '' });
-      loadData();
+      reloadAll();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to update goal');
     }
@@ -77,7 +86,7 @@ const Goals = () => {
     if (!window.confirm('Are you sure you want to delete this goal?')) return;
     try {
       await deleteSavingsGoal(goalId);
-      loadData();
+      reloadAll();
     } catch (err) {
       setError('Failed to delete goal');
     }
@@ -89,7 +98,7 @@ const Goals = () => {
       await contributeToGoal(contributeModal.id, contributeAmount);
       setContributeModal(null);
       setContributeAmount('');
-      loadData();
+      reloadAll();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to add contribution');
     }
@@ -98,7 +107,7 @@ const Goals = () => {
   const handleStatusChange = async (goalId, newStatus) => {
     try {
       await updateSavingsGoal(goalId, { status: newStatus });
-      loadData();
+      reloadAll();
     } catch (err) {
       setError('Failed to update status');
     }
@@ -178,6 +187,8 @@ const Goals = () => {
           </div>
         </div>
       )}
+
+      <GoalTrackingDashboard refreshKey={progressRefreshKey} />
 
       {(showForm || editingGoal) && (
         <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>

@@ -353,6 +353,19 @@ export const deleteNotification = async (id) => {
   return response.data;
 };
 
+// Goal progress analytics (Phase 3I)
+// Read-only. All projection math happens on the backend; this component only
+// displays what the API returns and never derives a metric itself.
+export const getGoalProgress = async () => {
+  const response = await api.get('/goals/progress');
+  return response.data;
+};
+
+export const getGoalProgressDetail = async (id) => {
+  const response = await api.get(`/goals/${id}/progress`);
+  return response.data;
+};
+
 // Recurring Bills Calendar
 export const getRecurringCalendar = async ({ start_date = '', end_date = '' } = {}) => {
   const params = new URLSearchParams();
