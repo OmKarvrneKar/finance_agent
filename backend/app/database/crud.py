@@ -3,7 +3,7 @@ from sqlalchemy import func
 from .db import (
     Transaction, TransactionSplit, SavingsGoal, SavingsGoalContribution, Notification,
 )
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Tuple, Optional, Sequence
 from decimal import Decimal
 from datetime import date, datetime
 
@@ -357,6 +357,39 @@ def get_savings_goal_contributions(
         .order_by(SavingsGoalContribution.contributed_at.asc())
         .all()
     )
+
+
+def get_savings_goal_contributions_bulk(
+    db: Session, user_id: int, goal_ids: Sequence[int]
+) -> Dict[int, List[SavingsGoalContribution]]:
+    """Contribution history for many owned goals in a single query.
+
+    Returns ``{goal_id: [contribution, ...]}`` with each list ordered oldest
+    first, matching :func:`get_savings_goal_contributions`. Goals with no rows
+    are present with an empty list, so callers never need a per-goal query to
+    discover that history is missing.
+    """
+    grouped: Dict[int, List[SavingsGoalContribution]] = {
+        goal_id: [] for goal_id in goal_ids
+    }
+    if not goal_ids:
+        return grouped
+
+    rows = (
+        db.query(SavingsGoalContribution)
+        .filter(
+            SavingsGoalContribution.user_id == user_id,
+            SavingsGoalContribution.goal_id.in_(list(goal_ids)),
+        )
+        .order_by(
+            SavingsGoalContribution.goal_id.asc(),
+            SavingsGoalContribution.contributed_at.asc(),
+        )
+        .all()
+    )
+    for row in rows:
+        grouped.setdefault(row.goal_id, []).append(row)
+    return grouped
 
 
 def get_savings_goals_summary(db: Session, user_id: int) -> Dict[str, Any]:

@@ -207,11 +207,59 @@ def get_goal_progress(db: Session, user_id: int, goal_id: int) -> Optional[Dict[
 
 
 def get_all_goals_progress(db: Session, user_id: int) -> List[Dict[str, Any]]:
-    """Progress + projection for every goal owned by this user."""
+    """Progress + projection for every goal owned by this user.
+
+    Contributions for all of the user's goals are loaded in one query, so this
+    stays at two queries regardless of how many goals exist.
+    """
     goals = crud.get_savings_goals(db, user_id)
+    contributions_by_goal = crud.get_savings_goal_contributions_bulk(
+        db, user_id, [goal.id for goal in goals]
+    )
     return [
-        compute_goal_progress(
-            goal, crud.get_savings_goal_contributions(db, goal.id, user_id)
-        )
+        compute_goal_progress(goal, contributions_by_goal.get(goal.id, []))
         for goal in goals
     ]
+
+
+# --- Legacy SavingsGoalResponse adapter -------------------------------------
+#
+# The legacy goal endpoints expose `progress_percent` and `projected_completion`.
+# Those fields used to come from a separate projection routine that inferred a
+# saving pace from the goal's age, which meant the same goal could report two
+# different completion dates depending on which endpoint was called. Both fields
+# are now derived from ``compute_goal_progress`` so there is exactly one
+# methodology; this adapter only reshapes the service result into the legacy
+# field names and never re-derives anything.
+
+
+def compute_legacy_progress(goal: SavingsGoal, contributions: List[Any]) -> Dict[str, Any]:
+    """Legacy response fields, computed by the same routine as the new API."""
+    result = compute_goal_progress(goal, contributions)
+    return {
+        "progress_percent": result["progress_percent"],
+        "projected_completion": result["projected_completion_date"],
+    }
+
+
+def get_legacy_progress(db: Session, user_id: int, goal: SavingsGoal) -> Dict[str, Any]:
+    """Legacy response fields for a single owned goal."""
+    contributions = crud.get_savings_goal_contributions(db, goal.id, user_id)
+    return compute_legacy_progress(goal, contributions)
+
+
+def get_legacy_progress_bulk(
+    db: Session, user_id: int, goals: List[SavingsGoal]
+) -> Dict[int, Dict[str, Any]]:
+    """Legacy response fields for many owned goals, keyed by goal id.
+
+    Uses a single contributions query for the whole batch so listing goals does
+    not issue one query per goal.
+    """
+    contributions_by_goal = crud.get_savings_goal_contributions_bulk(
+        db, user_id, [goal.id for goal in goals]
+    )
+    return {
+        goal.id: compute_legacy_progress(goal, contributions_by_goal.get(goal.id, []))
+        for goal in goals
+    }

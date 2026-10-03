@@ -316,15 +316,51 @@ def test_goals_summary_with_contributions(client, user_a_auth):
 # --- Projected Completion Tests ---
 
 def test_projected_completion_with_enough_data(client, user_a_auth):
+    """`projected_completion` needs real contribution history, not goal age.
+
+    A projection used to be derived from how long the goal had existed, so a
+    single deposit produced a confident-looking date. It now comes from the
+    shared goal-progress service, which needs at least two deposits spread over
+    a month before it will forecast.
+    """
+    from datetime import datetime
+    from app.database.db import SavingsGoalContribution
+
     create_res = client.post("/api/goals", json={
         "name": "Projected",
         "target_amount": "36500",
         "target_date": (date.today() + timedelta(days=365)).isoformat()
     }, headers=user_a_auth)
     goal_id = create_res.json()["id"]
-    res = client.post(f"/api/goals/{goal_id}/contribute", json={"amount": "100"}, headers=user_a_auth)
+
+    db = TestingSessionLocal()
+    try:
+        user_id = db.query(User).order_by(User.id.asc()).first().id
+        for amount, days_ago in (("100", 60), ("100", 30)):
+            db.add(SavingsGoalContribution(
+                goal_id=goal_id,
+                user_id=user_id,
+                amount=Decimal(amount),
+                contributed_at=datetime.utcnow() - timedelta(days=days_ago),
+            ))
+        db.commit()
+    finally:
+        db.close()
+
+    res = client.get(f"/api/goals/{goal_id}", headers=user_a_auth)
     data = res.json()
     assert data["projected_completion"] is not None
+
+def test_projected_completion_insufficient_history(client, user_a_auth):
+    """One deposit is not a rate, so the legacy field stays null."""
+    create_res = client.post("/api/goals", json={
+        "name": "One Deposit",
+        "target_amount": "36500",
+        "target_date": (date.today() + timedelta(days=365)).isoformat()
+    }, headers=user_a_auth)
+    goal_id = create_res.json()["id"]
+    res = client.post(f"/api/goals/{goal_id}/contribute", json={"amount": "100"}, headers=user_a_auth)
+    assert res.json()["projected_completion"] is None
 
 def test_projected_completion_no_contributions(client, user_a_auth):
     res = client.post("/api/goals", json={

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from decimal import Decimal
 from datetime import datetime, date
 
 from app.database.db import get_db, User, SavingsGoal
@@ -16,29 +15,14 @@ from app.services import goal_progress
 router = APIRouter()
 
 
-def _compute_progress(goal: SavingsGoal) -> dict:
-    current = goal.current_amount or Decimal('0')
-    target = goal.target_amount or Decimal('1')
-    progress_percent = float(current / target * 100) if target > 0 else 0
-    progress_percent = min(progress_percent, 100.0)
+def _compute_progress(goal: SavingsGoal, db: Session, user_id: int) -> dict:
+    """Legacy `progress_percent` / `projected_completion` for a savings goal.
 
-    projected_completion = None
-    if current > 0 and current < target and goal.target_date:
-        now = date.today()
-        created_date = goal.created_at.date() if goal.created_at else now
-        days_elapsed = max((now - created_date).days, 1)
-        rate = current / Decimal(str(days_elapsed))
-        remaining = target - current
-        days_remaining = int(remaining / rate) if rate > 0 else None
-        if days_remaining is not None:
-            from datetime import timedelta
-            projected = now + timedelta(days=days_remaining)
-            projected_completion = projected.isoformat()
-
-    return {
-        "progress_percent": round(progress_percent, 2),
-        "projected_completion": projected_completion,
-    }
+    Delegates to the goal progress service so the legacy endpoints and
+    ``/api/goals/{id}/progress`` can never disagree. No projection maths lives
+    in this module.
+    """
+    return goal_progress.get_legacy_progress(db, user_id, goal)
 
 
 @router.post("/goals", response_model=SavingsGoalResponse)
@@ -56,7 +40,7 @@ def create_goal(
         name=goal_in.name, target_amount=goal_in.target_amount,
         target_date=goal_in.target_date, description=goal_in.description,
     )
-    progress = _compute_progress(goal)
+    progress = _compute_progress(goal, db, current_user.id)
     return SavingsGoalResponse(
         id=goal.id, name=goal.name, description=goal.description,
         target_amount=goal.target_amount, current_amount=goal.current_amount,
@@ -74,9 +58,11 @@ def list_goals(
     current_user: User = Depends(get_current_user),
 ):
     goals = crud.get_savings_goals(db, current_user.id, status=status)
+    # One contributions query for the whole page instead of one per goal.
+    progress_by_goal = goal_progress.get_legacy_progress_bulk(db, current_user.id, goals)
     result = []
     for g in goals:
-        progress = _compute_progress(g)
+        progress = progress_by_goal[g.id]
         result.append(SavingsGoalResponse(
             id=g.id, name=g.name, description=g.description,
             target_amount=g.target_amount, current_amount=g.current_amount,
@@ -133,7 +119,7 @@ def get_goal(
     goal = crud.get_savings_goal(db, goal_id, current_user.id)
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found.")
-    progress = _compute_progress(goal)
+    progress = _compute_progress(goal, db, current_user.id)
     return SavingsGoalResponse(
         id=goal.id, name=goal.name, description=goal.description,
         target_amount=goal.target_amount, current_amount=goal.current_amount,
@@ -169,7 +155,7 @@ def update_goal(
     goal = crud.update_savings_goal(db, goal_id, current_user.id, updates)
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found.")
-    progress = _compute_progress(goal)
+    progress = _compute_progress(goal, db, current_user.id)
     return SavingsGoalResponse(
         id=goal.id, name=goal.name, description=goal.description,
         target_amount=goal.target_amount, current_amount=goal.current_amount,
@@ -204,7 +190,7 @@ def contribute_to_goal(
     goal = crud.contribute_to_savings_goal(db, goal_id, current_user.id, contribution.amount)
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found.")
-    progress = _compute_progress(goal)
+    progress = _compute_progress(goal, db, current_user.id)
     return SavingsGoalResponse(
         id=goal.id, name=goal.name, description=goal.description,
         target_amount=goal.target_amount, current_amount=goal.current_amount,
