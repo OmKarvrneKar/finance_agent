@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from .db import (
-    Transaction, TransactionSplit, SavingsGoal, SavingsGoalContribution, Notification,
+    Transaction, TransactionSplit, SavingsGoal, SavingsGoalContribution, Notification, Account,
 )
 from typing import List, Dict, Any, Tuple, Optional, Sequence
 from decimal import Decimal
@@ -406,6 +406,232 @@ def get_savings_goals_summary(db: Session, user_id: int) -> Dict[str, Any]:
         "total_saved": total_saved,
         "overall_progress": float(total_saved / total_target * 100) if total_target > 0 else 0,
     }
+
+
+# --- Account CRUD (Phase 4A) ---
+#
+# Balance policy
+# --------------
+# `opening_balance` is stored because no transaction can explain it.
+# The running balance is NOT stored: it is derived on every read as
+# `opening_balance` plus the signed sum of the account's transactions, so the
+# stored aggregate and the transactions can never disagree.
+#
+# Sign convention: a `credit` transaction is money arriving, a `debit` is money
+# leaving. For a credit card that reads backwards -- a purchase (debit) is money
+# owed and a payment (credit) reduces the debt -- so for `credit_card` accounts
+# the derived balance is reported as an amount owed, while every other type
+# reports money available.
+
+# Types whose balance is reported as an amount owed rather than available.
+_CREDIT_LIKE_TYPES = {"credit_card"}
+_AVAILABLE_NATURE = "available"
+_OWED_NATURE = "owed"
+
+
+def create_account(
+    db: Session,
+    user_id: int,
+    name: str,
+    account_type: str,
+    institution_name: Optional[str] = None,
+    last4: Optional[str] = None,
+    currency: str = "INR",
+    opening_balance: Decimal = Decimal("0"),
+) -> Account:
+    account = Account(
+        user_id=user_id,
+        name=name,
+        account_type=account_type,
+        institution_name=institution_name,
+        last4=last4,
+        currency=currency,
+        opening_balance=Decimal(str(opening_balance or 0)),
+        is_active=True,
+    )
+    db.add(account)
+    db.commit()
+    db.refresh(account)
+    return account
+
+
+def get_account(db: Session, account_id: int, user_id: int) -> Optional[Account]:
+    """Fetch one account scoped to its owner. Always filter by user_id."""
+    return db.query(Account).filter(
+        Account.id == account_id,
+        Account.user_id == user_id,
+    ).first()
+
+
+def get_accounts(
+    db: Session, user_id: int, is_active: Optional[bool] = None
+) -> List[Account]:
+    query = db.query(Account).filter(Account.user_id == user_id)
+    if is_active is not None:
+        query = query.filter(Account.is_active == is_active)
+    return query.order_by(Account.created_at.desc()).all()
+
+
+def update_account(
+    db: Session, account_id: int, user_id: int, updates: Dict[str, Any]
+) -> Optional[Account]:
+    account = get_account(db, account_id, user_id)
+    if not account:
+        return None
+    for key, value in updates.items():
+        if hasattr(account, key):
+            if key == "opening_balance" and value is not None:
+                value = Decimal(str(value))
+            # `institution_name` and `last4` are genuinely nullable, so an
+            # explicit null must clear them rather than being skipped.
+            setattr(account, key, value)
+    db.commit()
+    db.refresh(account)
+    return account
+
+
+def delete_account(db: Session, account_id: int, user_id: int) -> bool:
+    """Delete an account, keeping its transactions.
+
+    Linked transactions are detached (``account_id`` set back to NULL) rather
+    than deleted or left dangling: transaction amounts, categories and dates are
+    never touched, and the transactions simply become "unassigned" again, which
+    is exactly the state of every pre-Phase-4A transaction.
+    """
+    account = get_account(db, account_id, user_id)
+    if not account:
+        return False
+    db.query(Transaction).filter(
+        Transaction.account_id == account_id,
+        Transaction.user_id == user_id,
+    ).update({Transaction.account_id: None}, synchronize_session=False)
+    db.delete(account)
+    db.commit()
+    return True
+
+
+def get_account_balance(db: Session, account: Account) -> Dict[str, Any]:
+    """Derive the current balance for one account from its transactions.
+
+    Two aggregate queries, one per transaction type. No balance column is read
+    or written.
+    """
+    def total_for(transaction_type: str):
+        total, count = db.query(
+            func.coalesce(func.sum(Transaction.amount), 0),
+            func.count(Transaction.id),
+        ).filter(
+            Transaction.account_id == account.id,
+            Transaction.user_id == account.user_id,
+            Transaction.transaction_type == transaction_type,
+        ).one()
+        return Decimal(str(total)), int(count)
+
+    credits_total, credits_count = total_for("credit")
+    debits_total, debits_count = total_for("debit")
+    opening = Decimal(str(account.opening_balance or 0))
+
+    if account.account_type in _CREDIT_LIKE_TYPES:
+        balance = opening + debits_total - credits_total
+        nature = _OWED_NATURE
+    else:
+        balance = opening + credits_total - debits_total
+        nature = _AVAILABLE_NATURE
+
+    return {
+        "current_balance": balance,
+        "balance_nature": nature,
+        "transaction_count": credits_count + debits_count,
+    }
+
+
+def get_accounts_balances(
+    db: Session, accounts: List[Account]
+) -> Dict[int, Dict[str, Any]]:
+    """Derived balances for many accounts using two aggregate queries total.
+
+    One grouped query for credit totals and one for debit totals, instead of two
+    per account.
+    """
+    if not accounts:
+        return {}
+
+    account_ids = [a.id for a in accounts]
+    user_ids = {a.user_id for a in accounts}
+
+    def totals(transaction_type):
+        rows = (
+            db.query(
+                Transaction.account_id,
+                func.coalesce(func.sum(Transaction.amount), 0),
+                func.count(Transaction.id),
+            )
+            .filter(
+                Transaction.account_id.in_(account_ids),
+                Transaction.user_id.in_(list(user_ids)),
+                Transaction.transaction_type == transaction_type,
+            )
+            .group_by(Transaction.account_id)
+            .all()
+        )
+        return {
+            account_id: (Decimal(str(total)), int(count))
+            for account_id, total, count in rows
+        }
+
+    credit_totals = totals("credit")
+    debit_totals = totals("debit")
+
+    result: Dict[int, Dict[str, Any]] = {}
+    for account in accounts:
+        credit_sum, credit_count = credit_totals.get(account.id, (Decimal("0"), 0))
+        debit_sum, debit_count = debit_totals.get(account.id, (Decimal("0"), 0))
+        opening = Decimal(str(account.opening_balance or 0))
+        if account.account_type in _CREDIT_LIKE_TYPES:
+            balance = opening + debit_sum - credit_sum
+            nature = _OWED_NATURE
+        else:
+            balance = opening + credit_sum - debit_sum
+            nature = _AVAILABLE_NATURE
+        result[account.id] = {
+            "current_balance": balance,
+            "balance_nature": nature,
+            "transaction_count": credit_count + debit_count,
+        }
+    return result
+
+
+def assign_transaction_account(
+    db: Session, transaction_id: int, user_id: int, account_id: Optional[int]
+) -> Optional[Transaction]:
+    """Point a transaction at an account, or detach it with ``account_id=None``.
+
+    Ownership of both records is the caller's responsibility to verify; this
+    function re-checks the transaction only. Unlike ``update_transaction`` an
+    explicit ``None`` is written, because detaching is a real operation here.
+    """
+    tx = db.query(Transaction).filter(
+        Transaction.id == transaction_id,
+        Transaction.user_id == user_id,
+    ).first()
+    if not tx:
+        return None
+    tx.account_id = account_id
+    db.commit()
+    db.refresh(tx)
+    return tx
+
+
+def get_account_transaction_count(db: Session, account_id: int, user_id: int) -> int:
+    return int(
+        db.query(func.count(Transaction.id))
+        .filter(
+            Transaction.account_id == account_id,
+            Transaction.user_id == user_id,
+        )
+        .scalar()
+        or 0
+    )
 
 
 # --- Transaction Split CRUD ---

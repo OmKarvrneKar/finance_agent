@@ -4,6 +4,13 @@ from decimal import Decimal
 from typing import List, Dict, Optional, Any
 import re
 
+# Phase 4A account types. Kept as a plain tuple so the CRUD layer, the schemas
+# and the tests all read the same single definition.
+ACCOUNT_TYPES = ("bank", "credit_card", "cash", "wallet", "investment", "other")
+
+# The application reports in Indian Rupees, so that is the default currency.
+DEFAULT_CURRENCY = "INR"
+
 # Auth schemas
 class UserCreate(BaseModel):
     email: EmailStr
@@ -42,6 +49,155 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 # Transaction schemas
+class AccountBase(BaseModel):
+    name: str
+    account_type: str
+    institution_name: Optional[str] = None
+    # Exactly four digits, or omitted. A full account/card number is rejected
+    # here rather than silently truncated.
+    last4: Optional[str] = None
+    currency: str = DEFAULT_CURRENCY
+    opening_balance: Decimal = Decimal("0")
+
+    @field_validator("account_type")
+    @classmethod
+    def validate_account_type(cls, v):
+        normalised = (v or "").strip().lower()
+        if normalised not in ACCOUNT_TYPES:
+            raise ValueError(
+                f"account_type must be one of: {', '.join(ACCOUNT_TYPES)}"
+            )
+        return normalised
+
+    @field_validator("last4")
+    @classmethod
+    def validate_last4(cls, v):
+        if v is None:
+            return None
+        candidate = str(v).strip()
+        if not re.fullmatch(r"\d{4}", candidate):
+            # This is the guard that keeps full account numbers out of the
+            # database: anything that is not exactly four digits is refused.
+            raise ValueError("last4 must be exactly 4 digits")
+        return candidate
+
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v):
+        candidate = (v or "").strip().upper()
+        if not re.fullmatch(r"[A-Z]{3}", candidate):
+            raise ValueError("currency must be a 3-letter ISO code, e.g. INR")
+        return candidate
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v):
+        candidate = (v or "").strip()
+        if not candidate:
+            raise ValueError("name must not be empty")
+        return candidate
+
+
+class AccountCreate(AccountBase):
+    pass
+
+
+class AccountUpdate(BaseModel):
+    """Partial update. Only the fields actually sent are changed.
+
+    Duplicate names are allowed: a user may legitimately hold several accounts
+    at the same bank, so no uniqueness restriction is imposed.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    name: Optional[str] = None
+    account_type: Optional[str] = None
+    institution_name: Optional[str] = None
+    last4: Optional[str] = None
+    currency: Optional[str] = None
+    opening_balance: Optional[Decimal] = None
+    is_active: Optional[bool] = None
+
+    @field_validator("account_type")
+    @classmethod
+    def validate_account_type(cls, v):
+        if v is None:
+            return None
+        normalised = v.strip().lower()
+        if normalised not in ACCOUNT_TYPES:
+            raise ValueError(
+                f"account_type must be one of: {', '.join(ACCOUNT_TYPES)}"
+            )
+        return normalised
+
+    @field_validator("last4")
+    @classmethod
+    def validate_last4(cls, v):
+        if v is None:
+            return None
+        candidate = str(v).strip()
+        if not re.fullmatch(r"\d{4}", candidate):
+            raise ValueError("last4 must be exactly 4 digits")
+        return candidate
+
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v):
+        if v is None:
+            return None
+        candidate = v.strip().upper()
+        if not re.fullmatch(r"[A-Z]{3}", candidate):
+            raise ValueError("currency must be a 3-letter ISO code, e.g. INR")
+        return candidate
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v):
+        if v is None:
+            return None
+        candidate = v.strip()
+        if not candidate:
+            raise ValueError("name must not be empty")
+        return candidate
+
+
+class AccountResponse(BaseModel):
+    """An account plus its derived balance.
+
+    ``current_balance`` is computed from ``opening_balance`` and the account's
+    transactions at read time; it is not a stored column.
+
+    ``balance_nature`` tells the client how to read the sign:
+      * ``available`` - positive means money available (bank, cash, wallet, ...).
+      * ``owed``      - positive means money owed on the card.
+    """
+
+    id: int
+    user_id: int
+    name: str
+    account_type: str
+    institution_name: Optional[str] = None
+    last4: Optional[str] = None
+    currency: str
+    opening_balance: Decimal
+    current_balance: Decimal
+    balance_nature: str
+    transaction_count: int = 0
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TransactionAccountAssign(BaseModel):
+    """Attach (or detach, with ``account_id: null``) a transaction's account."""
+
+    account_id: Optional[int] = None
+
+
 class TransactionBase(BaseModel):
     date: date_type
     description: str
@@ -52,6 +208,9 @@ class TransactionBase(BaseModel):
     is_recurring: bool = False
     is_user_confirmed_recurring: bool = False
     raw_text: Optional[str] = None
+    # Phase 4A: optional account link. Existing callers that never send this get
+    # NULL, which is exactly the pre-Phase-4A behaviour.
+    account_id: Optional[int] = None
 
 class TransactionUpdate(BaseModel):
     model_config = {"extra": "forbid"}

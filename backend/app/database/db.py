@@ -39,7 +39,42 @@ class Transaction(Base):
     raw_text = Column(String, nullable=True)
     source = Column(String, default="bank_statement", nullable=False)
     receipt_image_path = Column(String, nullable=True)
+    # Phase 4A: which account this transaction belongs to. Nullable so every
+    # pre-existing transaction keeps working unchanged and is never guessed into
+    # an account.
+    account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Account(Base):
+    """A user's own financial account (bank, card, cash, wallet, ...).
+
+    Only the last four digits of a card/account number are ever stored, in
+    ``last4``; a full account number has no column and is rejected on input.
+
+    ``opening_balance`` is stored because it cannot be derived from
+    transactions -- it predates them. The running balance deliberately is *not*
+    stored: it is derived on read as ``opening_balance`` plus the signed sum of
+    the account's transactions, so the two can never drift apart.
+    """
+
+    __tablename__ = "accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    # bank | credit_card | cash | wallet | investment | other
+    account_type = Column(String, nullable=False, index=True)
+    institution_name = Column(String, nullable=True)
+    # Last four digits only. Never a full account/card number.
+    last4 = Column(String(4), nullable=True)
+    currency = Column(String, nullable=False, default="INR")
+    # Balance before any tracked transaction. Nullable only in the sense that it
+    # defaults to zero; stored so a balance cannot be derived from nothing.
+    opening_balance = Column(Numeric(12, 2), nullable=False, default=0)
+    is_active = Column(Boolean, default=True, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 class BudgetGoal(Base):
     __tablename__ = "budget_goals"
