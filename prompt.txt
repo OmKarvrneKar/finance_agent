@@ -1,101 +1,18 @@
-Start Phase 4A — Multi-Account Support.
+Verify Phase 4B only. Do NOT modify any files.
 
-FIRST STEP ONLY: build the backend/data model. Do NOT build frontend yet.
+Answer ONLY these:
 
-Goal:
-Allow each authenticated user to maintain multiple financial accounts and associate transactions with the correct account.
+1. Is `GET /api/accounts/summary` implemented? YES/NO
+2. Which existing analytics endpoints accept `account_id`? List them.
+3. When `account_id` is omitted, do existing analytics behave exactly as before? YES/NO
+4. When `account_id` is provided, are only that account's transactions included? YES/NO
+5. Are NULL-account transactions excluded when filtering by an account? YES/NO
+6. Are split transactions protected from double counting? YES/NO
+7. Are foreign account IDs rejected? YES/NO
+8. How many new tests were added?
+9. Current backend test result?
+10. Current frontend test result?
 
-Account types:
+If any answer is NO, give the exact file/function that is missing or incorrect.
 
-* bank
-* credit_card
-* cash
-* wallet
-* investment
-* other
-
-Account fields:
-
-* id
-* user_id
-* name
-* account_type
-* institution_name (optional)
-* last4 (optional, never store full account number)
-* currency
-* opening_balance (if appropriate)
-* current/derived balance where appropriate
-* is_active
-* created_at
-* updated_at
-
-Requirements:
-
-* Every account belongs to exactly one user.
-* Users cannot access another user's accounts.
-* Transaction.account_id should be nullable initially for backward compatibility.
-* Existing transactions must continue working.
-* Do NOT duplicate balances if they can be derived safely from transactions.
-* Never store full bank/card account numbers.
-* Currency defaults to the existing application currency where appropriate.
-* Validate account_type.
-* Prevent duplicate account names only if the existing product semantics require it; don't add arbitrary restrictions.
-
-APIs:
-POST   /api/accounts
-GET    /api/accounts
-GET    /api/accounts/{id}
-PATCH  /api/accounts/{id}
-DELETE /api/accounts/{id}
-
-Also add a safe way to associate an existing transaction with an account.
-
-Important:
-
-* Do NOT automatically guess account assignment for old transactions.
-* Do NOT modify transaction amounts.
-* Do NOT change category logic.
-* Do NOT change split logic.
-* Do NOT change recurring logic.
-* Do NOT change analytics yet.
-* Do NOT add frontend.
-* Do NOT add bank integrations/Plaid/Open Banking.
-* Do NOT store sensitive account numbers.
-
-Migration:
-
-* Add accounts table.
-* Add nullable transaction.account_id.
-* Preserve all existing data.
-* Migration must be reversible where practical.
-
-Tests:
-
-* create account
-* list accounts
-* get account
-* update account
-* delete account
-* authentication
-* user isolation
-* invalid account type
-* duplicate/access control
-* transaction association
-* existing transactions with NULL account_id
-* migration/data preservation
-* cannot access another user's account
-* cannot attach transaction belonging to another user
-
-Run full backend + frontend test suites.
-
-STOP and report:
-
-1. database schema
-2. migration
-3. APIs
-4. transaction association method
-5. security/user isolation
-6. backward compatibility
-7. tests added
-8. backend/frontend/total tests
-9. limitations
+STOP after answering.

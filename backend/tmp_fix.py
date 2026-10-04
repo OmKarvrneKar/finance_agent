@@ -1,5 +1,4 @@
 from typing import List, Optional
-from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -164,24 +163,3 @@ def assign_transaction_account(
     if not updated:
         raise HTTPException(status_code=404, detail="Transaction not found.")
     return updated
-
-@router.get("/summary")
-def get_accounts_summary(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    accounts = crud.get_accounts(db, current_user.id)
-    balances = crud.get_accounts_balances(db, current_user.id, accounts=accounts)
-    res = []
-    for a in accounts:
-        res.append({
-            "account_id": a.id,
-            "name": a.name,
-            "account_type": a.account_type,
-            "currency": a.currency,
-            "current_balance": balances.get(a.id, Decimal("0")),
-            "total_credits": balances.get(f"{a.id}:credits", Decimal("0")),
-            "total_debits": balances.get(f"{a.id}:debits", Decimal("0")),
-            "transaction_count": balances.get(f"{a.id}:count", 0),
-        })
-    return res

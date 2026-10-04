@@ -5,8 +5,7 @@ from decimal import Decimal
 import logging
 
 from app.database.db import get_db, User
-from app.database import crud
-from app.database.crud import get_analytics_summary
+from app.database import crud\nfrom app.database.crud import get_analytics_summary
 from app.auth import get_current_user
 from app.services.merchant_analytics import get_merchant_analytics
 from app.services.spending_velocity import (
@@ -42,14 +41,9 @@ def get_merchant_analytics_endpoint(
     end_date: Optional[str] = Query(None, description="End date YYYY-MM-DD"),
     limit: int = Query(20, ge=1, le=100, description="Max merchants to return"),
     search: Optional[str] = Query(None, description="Search merchant name"),
-    account_id: Optional[int] = Query(None, description="Filter by account ID"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if account_id is not None:
-        account = crud.get_account(db, account_id, current_user.id)
-        if not account:
-            raise HTTPException(status_code=404, detail="Account not found.")
     return get_merchant_analytics(
         db, current_user.id, start_date, end_date, limit, search, account_id
     )

@@ -13,12 +13,15 @@ def get_merchant_analytics(
     end_date: Optional[str] = None,
     limit: int = 20,
     search: Optional[str] = None,
+    account_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.transaction_type == "debit",
     )
 
+    if account_id is not None:
+        query = query.filter(Transaction.account_id == account_id)
     if start_date:
         query = query.filter(Transaction.date >= start_date)
     if end_date:
