@@ -14,7 +14,7 @@ const ALERT_STYLES = {
   no_baseline: { bg: '#f3f4f6', text: '#4b5563', border: '#9ca3af', label: 'No baseline' },
 };
 
-const SpendingVelocityCard = () => {
+const SpendingVelocityCard = ({ accountId }) => {
   const [windowDays, setWindowDays] = useState(3);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +27,10 @@ const SpendingVelocityCard = () => {
       setLoading(true);
       setError('');
       try {
-        const result = await getSpendingVelocity({ window_days: windowDays });
+        const result = await getSpendingVelocity({
+          window_days: windowDays,
+          ...(accountId !== undefined ? { account_id: accountId } : {}),
+        });
         if (!cancelled) setData(result);
       } catch (err) {
         if (cancelled) return;
@@ -39,7 +42,7 @@ const SpendingVelocityCard = () => {
     };
     load();
     return () => { cancelled = true; };
-  }, [windowDays]);
+  }, [windowDays, accountId]);
 
   const alertLevel = data?.alert_level || 'insufficient_data';
   const alertStyle = ALERT_STYLES[alertLevel] || ALERT_STYLES.insufficient_data;

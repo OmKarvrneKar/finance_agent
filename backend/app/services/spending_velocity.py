@@ -21,6 +21,14 @@ Alert levels (pace relative to the user's own history, never absolute size):
 
 Strong alerts (high/very_high) are only reported when at least
 MIN_BASELINE_WINDOWS baseline windows are available.
+
+Account scoping
+---------------
+When ``account_id`` is supplied, only transactions belonging to that account
+participate: the current window spend, the baseline windows, and the history
+coverage date all come from that account's transactions. NULL-account
+transactions are excluded. Omitting ``account_id`` preserves the original
+unfiltered behaviour exactly.
 """
 
 from datetime import date, timedelta
@@ -63,14 +71,18 @@ def _sum_debits(
     user_id: int,
     start_date: date,
     end_date: date,
+    account_id: Optional[int] = None,
 ) -> Decimal:
     """Sum debit transaction amounts in [start_date, end_date].
 
     Uses original Transaction.amount only — split rows are never added.
     Future-dated transactions (date > today) are excluded by the caller
     passing end_date <= today.
+
+    When ``account_id`` is provided, only transactions belonging to that
+    account are counted (NULL-account transactions are excluded).
     """
-    result = (
+    query = (
         db.query(func.coalesce(func.sum(Transaction.amount), 0))
         .filter(
             Transaction.user_id == user_id,
@@ -78,8 +90,10 @@ def _sum_debits(
             Transaction.date >= start_date,
             Transaction.date <= end_date,
         )
-        .scalar()
     )
+    if account_id is not None:
+        query = query.filter(Transaction.account_id == account_id)
+    result = query.scalar()
     return Decimal(str(result)) if result is not None else Decimal("0")
 
 
@@ -88,8 +102,14 @@ def get_spending_velocity(
     user_id: int,
     window_days: int = DEFAULT_WINDOW_DAYS,
     today: Optional[date] = None,
+    account_id: Optional[int] = None,
 ) -> Dict[str, Any]:
-    """Compute spending pace vs the user's own historical N-day windows."""
+    """Compute spending pace vs the user's own historical N-day windows.
+
+    When ``account_id`` is provided, only transactions belonging to that
+    account contribute to both the current window and the baseline windows.
+    Ownership of the account is the caller's (router) responsibility.
+    """
     if today is None:
         today = date.today()
 
@@ -97,19 +117,22 @@ def get_spending_velocity(
     end_date = today
     start_date = today - timedelta(days=window_days - 1)
 
-    current_spend = _sum_debits(db, user_id, start_date, end_date)
+    current_spend = _sum_debits(db, user_id, start_date, end_date, account_id)
 
     # History coverage starts at the earliest transaction of any type (debit or
-# credit). Spending totals still use debits only — zero-spend periods with
-# only income still form valid baseline windows.
-    earliest = (
+    # credit) — restricted to the account when one is selected. Spending totals
+    # still use debits only — zero-spend periods with only income still form
+    # valid baseline windows.
+    earliest_query = (
         db.query(func.min(Transaction.date))
         .filter(
             Transaction.user_id == user_id,
             Transaction.date <= end_date,
         )
-        .scalar()
     )
+    if account_id is not None:
+        earliest_query = earliest_query.filter(Transaction.account_id == account_id)
+    earliest = earliest_query.scalar()
 
     baseline_method = BASELINE_METHOD_TEMPLATE.format(
         max_windows=MAX_BASELINE_WINDOWS,
@@ -137,7 +160,7 @@ def get_spending_velocity(
             for _ in range(windows_to_use):
                 w_end = cursor_end
                 w_start = w_end - timedelta(days=window_days - 1)
-                window_spends.append(_sum_debits(db, user_id, w_start, w_end))
+                window_spends.append(_sum_debits(db, user_id, w_start, w_end, account_id))
                 cursor_end = w_start - timedelta(days=1)
 
             windows_used = len(window_spends)

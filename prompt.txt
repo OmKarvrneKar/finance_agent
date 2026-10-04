@@ -1,38 +1,43 @@
-Start Phase 4C — Account-Aware Spending Velocity.
+Start Phase 4D — Account-Aware Forecast.
 
 FIRST STEP ONLY: backend.
 
-Extend the existing spending velocity calculation to accept optional `account_id`.
+Extend the existing forecasting endpoint/service with optional `account_id`.
 
 Requirements:
 
-* Existing behavior unchanged when account_id is omitted.
-* When account_id is provided, only transactions belonging to that account are used.
-* Account must belong to authenticated user.
-* Foreign/nonexistent account_id → 404.
-* NULL-account transactions excluded when a specific account is selected.
-* Preserve the existing velocity algorithm exactly.
-* Do NOT change thresholds.
-* Do NOT change baseline methodology.
-* Do NOT change window calculations.
-* Do NOT modify notifications.
-* Do NOT modify frontend yet.
+* account_id omitted → existing forecast behavior EXACTLY unchanged
+* account_id provided → forecast only transactions belonging to that account
+* account must belong to authenticated user
+* foreign/nonexistent account_id → 404
+* NULL-account transactions excluded when a specific account is selected
+* Preserve the existing forecasting algorithm exactly
+* Do NOT add seasonality/ML/Prophet yet
+* Do NOT change forecast formulas
+* Do NOT change date handling
+* Do NOT modify velocity
+* Do NOT modify goals
+* Do NOT modify notifications
+* Do NOT build frontend yet
 
-Reuse the existing spending velocity service.
-Do not duplicate calculations.
+Important:
+The historical data used by the forecast must also use the same account filter. Do not filter only the current-period spending.
+
+Reuse existing forecasting service. Do not duplicate formulas.
 
 Tests:
 
-* existing behavior without account_id
-* account-filtered velocity
+* existing forecast unchanged without account_id
+* account-filtered forecast
+* historical account filtering
 * foreign account
 * nonexistent account
 * NULL-account exclusion
 * multiple accounts
-* split transaction correctness
-* baseline correctness
-* notification behavior remains unchanged
-* existing velocity regression tests
+* insufficient data
+* Decimal/rounding correctness
+* date boundary behavior
+* existing forecast regression tests
 
 Run backend tests and npm build.
 
@@ -40,7 +45,8 @@ STOP and report:
 
 1. endpoint changed
 2. account filtering
-3. algorithm preservation
-4. tests added
-5. backend/frontend/total tests
-6. limitations
+3. historical filtering
+4. algorithm preservation
+5. tests added
+6. backend/frontend/total tests
+7. limitations

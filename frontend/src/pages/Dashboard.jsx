@@ -332,7 +332,7 @@ const Dashboard = () => {
 
       {/* Spending Velocity */}
       <div style={{ marginBottom: '24px' }}>
-        <SpendingVelocityCard />
+        <SpendingVelocityCard accountId={selectedAccount !== null ? selectedAccount : undefined} />
       </div>
 
       {/* Savings Recommendations */}

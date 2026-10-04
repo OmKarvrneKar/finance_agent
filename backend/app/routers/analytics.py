@@ -63,7 +63,14 @@ def get_spending_velocity_endpoint(
         le=MAX_WINDOW_DAYS,
         description="Current window length in days (1-90)",
     ),
+    account_id: Optional[int] = Query(None, description="Filter by account ID"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return get_spending_velocity(db, current_user.id, window_days=window_days)
+    if account_id is not None:
+        account = crud.get_account(db, account_id, current_user.id)
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found.")
+    return get_spending_velocity(
+        db, current_user.id, window_days=window_days, account_id=account_id
+    )

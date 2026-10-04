@@ -36,7 +36,9 @@ vi.mock('../components/ForecastAlerts', () => ({ default: () => <div data-testid
 vi.mock('../components/AnomalyAlerts', () => ({ default: () => <div data-testid="anomaly-alerts" /> }));
 vi.mock('../components/SavingsRecommendations', () => ({ default: () => <div data-testid="savings-recommendations" /> }));
 vi.mock('../components/RecurringBillsCalendar', () => ({ default: () => <div data-testid="recurring-bills-calendar" /> }));
-vi.mock('../components/SpendingVelocityCard', () => ({ default: () => <div data-testid="spending-velocity-card" /> }));
+vi.mock('../components/SpendingVelocityCard', () => ({
+  default: ({ accountId }) => <div data-testid="spending-velocity-card" data-account-id={accountId} />,
+}));
 
 import {
   getAnalyticsSummary,
@@ -245,5 +247,21 @@ describe('Dashboard account selector and summary', () => {
     expect('account_id' in merchantCall).toBe(false);
     expect(screen.getByText('Total Income')).toBeInTheDocument();
     expect(screen.getByText('Net Cash Flow')).toBeInTheDocument();
+  });
+
+  it('All Accounts passes no account_id to velocity card', async () => {
+    renderWithAuth(<Dashboard />);
+    await waitForSelector();
+    await waitFor(() => expect(screen.getByTestId('spending-velocity-card')).toBeInTheDocument());
+    expect(screen.getByTestId('spending-velocity-card')).not.toHaveAttribute('data-account-id');
+  });
+
+  it('selected account passes account_id to velocity card', async () => {
+    renderWithAuth(<Dashboard />);
+    await waitForSelector();
+    fireEvent.click(screen.getByTestId('account-option-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('spending-velocity-card')).toHaveAttribute('data-account-id', '1');
+    });
   });
 });

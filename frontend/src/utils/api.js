@@ -254,8 +254,9 @@ export const getMerchantAnalytics = async ({ start_date = '', end_date = '', lim
   return response.data;
 };
 
-export const getSpendingVelocity = async ({ window_days = 3 } = {}) => {
+export const getSpendingVelocity = async ({ window_days = 3, account_id } = {}) => {
   const params = new URLSearchParams({ window_days: String(window_days) });
+  if (account_id !== undefined) params.append('account_id', account_id);
   const response = await api.get(`/analytics/spending-velocity?${params.toString()}`);
   return response.data;
 };
