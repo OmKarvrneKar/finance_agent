@@ -232,21 +232,23 @@ export const discardReceipt = async (id) => {
 };
 
 // Analytics
-export const getAnalyticsSummary = async ({ start_date = '', end_date = '' } = {}) => {
+export const getAnalyticsSummary = async ({ start_date = '', end_date = '', account_id } = {}) => {
   const params = new URLSearchParams();
   if (start_date) params.append('start_date', start_date);
   if (end_date) params.append('end_date', end_date);
+  if (account_id !== undefined) params.append('account_id', account_id);
   const qs = params.toString();
   const response = await api.get(`/analytics/summary${qs ? '?' + qs : ''}`);
   return response.data;
 };
 
-export const getMerchantAnalytics = async ({ start_date = '', end_date = '', limit = 20, search = '' } = {}) => {
+export const getMerchantAnalytics = async ({ start_date = '', end_date = '', limit = 20, search = '', account_id } = {}) => {
   const params = new URLSearchParams();
   if (start_date) params.append('start_date', start_date);
   if (end_date) params.append('end_date', end_date);
   if (limit) params.append('limit', limit);
   if (search) params.append('search', search);
+  if (account_id !== undefined) params.append('account_id', account_id);
   const qs = params.toString();
   const response = await api.get(`/analytics/merchants${qs ? '?' + qs : ''}`);
   return response.data;
@@ -319,6 +321,20 @@ export const updateSplit = async (splitId, data) => {
 
 export const deleteSplit = async (splitId) => {
   const response = await api.delete(`/splits/${splitId}`);
+  return response.data;
+};
+
+// Accounts
+export const getAccounts = async ({ is_active } = {}) => {
+  const params = new URLSearchParams();
+  if (is_active !== undefined) params.append('is_active', String(is_active));
+  const qs = params.toString();
+  const response = await api.get(`/accounts${qs ? '?' + qs : ''}`);
+  return response.data;
+};
+
+export const getAccountsSummary = async () => {
+  const response = await api.get('/accounts/summary');
   return response.data;
 };
 

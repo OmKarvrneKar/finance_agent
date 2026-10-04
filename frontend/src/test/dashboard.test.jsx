@@ -8,6 +8,8 @@ vi.mock('../utils/api', () => ({
   getMe: vi.fn().mockRejectedValue(new Error('no auth')),
   logoutUser: vi.fn(),
   getAnalyticsSummary: vi.fn(),
+  getAccounts: vi.fn().mockResolvedValue([]),
+  getAccountsSummary: vi.fn().mockResolvedValue([]),
   getRecurringCalendar: vi.fn().mockResolvedValue({
     bills: [],
     start_date: '',

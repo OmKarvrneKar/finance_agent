@@ -5,7 +5,7 @@ import { AlertCircle, Search, Store, TrendingDown } from 'lucide-react';
 
 const COLORS = ['#3B82F6', '#059669', '#D97706', '#DC2626', '#7C3AED', '#0284C7', '#C026D3', '#0D9488', '#E11D48'];
 
-const MerchantAnalytics = ({ startDate, endDate }) => {
+const MerchantAnalytics = ({ startDate, endDate, accountId }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,6 +21,7 @@ const MerchantAnalytics = ({ startDate, endDate }) => {
         end_date: endDate || '',
         limit,
         search,
+        ...(accountId !== undefined ? { account_id: accountId } : {}),
       });
       setData(result);
     } catch (err) {
@@ -29,7 +30,7 @@ const MerchantAnalytics = ({ startDate, endDate }) => {
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate, limit, search]);
+  }, [startDate, endDate, limit, search, accountId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

@@ -697,3 +697,73 @@ class TestBackwardCompatibility:
             assert db.query(Transaction).filter(Transaction.user_id == _user_id()).one().account_id is None
         finally:
             db.close()
+
+# --- Account summary endpoint (Phase 4B) ---
+
+class TestAccountsSummaryEndpoint:
+    def test_summary_route_is_not_shadowed_by_account_id(self, client, user_a_auth):
+        """GET /api/accounts/summary must not be parsed as {account_id}."""
+        res = client.get("/api/accounts/summary", headers=user_a_auth)
+        assert res.status_code == 200, res.text
+
+    def test_summary_returns_derived_totals(self, client, user_a_auth):
+        bank = _create_account(client, user_a_auth, name="Bank", opening_balance="1000.00")
+        _seed_transaction(_user_id(), bank["id"], amount="5000.00", transaction_type="credit")
+        _seed_transaction(_user_id(), bank["id"], amount="250.00", transaction_type="debit")
+        _seed_transaction(_user_id(), None, amount="999.99")  # NULL-account tx excluded
+
+        res = client.get("/api/accounts/summary", headers=user_a_auth)
+        assert res.status_code == 200
+        rows = res.json()
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["account_id"] == bank["id"]
+        assert row["name"] == "Bank"
+        assert row["account_type"] == "bank"
+        assert row["currency"] == bank["currency"]
+        assert row["balance_nature"] == "available"
+        assert float(row["current_balance"]) == 5750.00  # 1000 + 5000 - 250
+        assert float(row["total_credits"]) == 5000.00
+        assert float(row["total_debits"]) == 250.00
+        assert row["transaction_count"] == 2
+
+    def test_summary_credit_card_balance_is_owed(self, client, user_a_auth):
+        card = _create_account(
+            client, user_a_auth, name="Card", account_type="credit_card", opening_balance="0.00"
+        )
+        _seed_transaction(_user_id(), card["id"], amount="300.00", transaction_type="debit")
+        _seed_transaction(_user_id(), card["id"], amount="100.00", transaction_type="credit")
+
+        res = client.get("/api/accounts/summary", headers=user_a_auth)
+        row = res.json()[0]
+        assert row["balance_nature"] == "owed"
+        assert float(row["current_balance"]) == 200.00  # owed = opening + debits - credits
+        assert float(row["total_credits"]) == 100.00
+        assert float(row["total_debits"]) == 300.00
+        assert row["transaction_count"] == 2
+
+    def test_summary_lists_every_account(self, client, user_a_auth):
+        _create_account(client, user_a_auth, name="First")
+        _create_account(client, user_a_auth, name="Second", account_type="cash")
+
+        res = client.get("/api/accounts/summary", headers=user_a_auth)
+        names = sorted(r["name"] for r in res.json())
+        assert names == ["First", "Second"]
+
+    def test_summary_excludes_other_users_accounts(self, client, user_a_auth, user_b_auth):
+        _create_account(client, user_b_auth, name="B bank")
+
+        res = client.get("/api/accounts/summary", headers=user_a_auth)
+        assert res.status_code == 200
+        assert res.json() == []
+
+    def test_summary_empty_when_no_accounts(self, client, user_a_auth):
+        res = client.get("/api/accounts/summary", headers=user_a_auth)
+        assert res.status_code == 200
+        assert res.json() == []
+
+    def test_summary_requires_authentication(self, client, user_a_auth):
+        _create_account(client, user_a_auth)
+        client.cookies.clear()
+        res = client.get("/api/accounts/summary")
+        assert res.status_code == 401

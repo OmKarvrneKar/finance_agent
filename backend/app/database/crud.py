@@ -600,6 +600,8 @@ def get_accounts_balances(
             "current_balance": balance,
             "balance_nature": nature,
             "transaction_count": credit_count + debit_count,
+            "total_credits": credit_sum,
+            "total_debits": debit_sum,
         }
     return result
 

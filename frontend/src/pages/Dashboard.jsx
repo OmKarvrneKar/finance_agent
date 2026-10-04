@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LineChart, Line } from 'recharts';
-import { getAnalyticsSummary } from '../utils/api';
+import { getAnalyticsSummary, getAccounts, getAccountsSummary } from '../utils/api';
 import SummaryCard from '../components/SummaryCard';
 import ForecastCard from '../components/ForecastCard';
 import ForecastAlerts from '../components/ForecastAlerts';
@@ -10,9 +10,38 @@ import SavingsRecommendations from '../components/SavingsRecommendations';
 import MerchantAnalytics from '../components/MerchantAnalytics';
 import RecurringBillsCalendar from '../components/RecurringBillsCalendar';
 import SpendingVelocityCard from '../components/SpendingVelocityCard';
-import { ArrowDownCircle, ArrowUpCircle, Wallet, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Wallet, Calendar, TrendingDown, TrendingUp, CircleUser, Landmark, CreditCard, Banknote, Coins } from 'lucide-react';
 
 const COLORS = ['#3B82F6', '#059669', '#D97706', '#DC2626', '#7C3AED', '#0284C7', '#C026D3', '#0D9488', '#E11D48'];
+
+const ACCOUNT_TYPE_META = {
+  bank: { label: 'Bank', color: '#3B82F6', Icon: Landmark },
+  credit_card: { label: 'Credit Card', color: '#DC2626', Icon: CreditCard },
+  cash: { label: 'Cash', color: '#059669', Icon: Banknote },
+  wallet: { label: 'Wallet', color: '#D97706', Icon: Wallet },
+  investment: { label: 'Investment', color: '#7C3AED', Icon: TrendingUp },
+  other: { label: 'Other', color: '#64748B', Icon: Coins },
+};
+
+const getAccountTypeMeta = (accountType) => ACCOUNT_TYPE_META[accountType] || ACCOUNT_TYPE_META.other;
+
+const accountPillStyle = (active, color) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '6px 12px',
+  borderRadius: '999px',
+  fontSize: '0.825rem',
+  fontWeight: 600,
+  fontFamily: 'inherit',
+  border: `1px solid ${active ? color : 'var(--border-color)'}`,
+  backgroundColor: active ? `${color}1A` : 'var(--bg-color)',
+  color: active ? color : 'var(--text-main)',
+  cursor: 'pointer',
+});
+
+const formatAmount = (value, currency) =>
+  `${currency} ${Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const RANGE_PRESETS = [
   { label: 'This Month', value: 'this_month' },
@@ -54,6 +83,11 @@ const Dashboard = () => {
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [useCustom, setUseCustom] = useState(false);
+  const [accounts, setAccounts] = useState([]);
+  const [accountSummary, setAccountSummary] = useState([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [accountsError, setAccountsError] = useState('');
+  const [selectedAccount, setSelectedAccount] = useState(null); // null = All Accounts
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -62,7 +96,10 @@ const Dashboard = () => {
       const dates = useCustom
         ? { start: customStart, end: customEnd }
         : getPresetDates(preset);
-      const data = await getAnalyticsSummary(dates);
+      const data = await getAnalyticsSummary({
+        ...dates,
+        ...(selectedAccount !== null ? { account_id: selectedAccount } : {}),
+      });
       setAnalytics(data);
     } catch (err) {
       if (err.response?.status === 401) return;
@@ -70,9 +107,33 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [preset, customStart, customEnd, useCustom]);
+  }, [preset, customStart, customEnd, useCustom, selectedAccount]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadAccounts = async () => {
+      setAccountsLoading(true);
+      setAccountsError('');
+      try {
+        const [list, summary] = await Promise.all([
+          getAccounts({ is_active: true }),
+          getAccountsSummary(),
+        ]);
+        if (cancelled) return;
+        setAccounts(list || []);
+        setAccountSummary(summary || []);
+      } catch (err) {
+        if (cancelled || err.response?.status === 401) return;
+        setAccountsError('Failed to load accounts');
+      } finally {
+        if (!cancelled) setAccountsLoading(false);
+      }
+    };
+    loadAccounts();
+    return () => { cancelled = true; };
+  }, []);
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -113,6 +174,9 @@ const Dashboard = () => {
   const categoryData = data.category_breakdown.map(c => ({ name: c.category, value: Number(c.amount) }));
   const trendData = data.spending_trend.map(t => ({ month: t.month, amount: Number(t.amount) }));
   const topCategories = categoryData.slice(0, 5);
+  const selectedAccountName = selectedAccount === null
+    ? 'All Accounts'
+    : (accounts.find(a => a.id === selectedAccount)?.name || `Account #${selectedAccount}`);
 
   return (
     <div className="layout-container">
@@ -121,6 +185,110 @@ const Dashboard = () => {
           <h1 className="page-title">Financial Dashboard</h1>
           <p className="page-description">Overview of your spending habits and financial health.</p>
         </div>
+        <div data-testid="selected-account-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
+          <CircleUser size={16} />
+          <span>{selectedAccountName}</span>
+        </div>
+      </div>
+
+      {/* Account Selector */}
+      <div className="card" data-testid="account-selector" style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-muted)' }}>Account:</span>
+          {accountsLoading ? (
+            <div data-testid="accounts-loading" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Loading accounts...</div>
+          ) : accountsError ? (
+            <div style={{ fontSize: '0.85rem', color: 'var(--debit-text)' }}>{accountsError}</div>
+          ) : (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                data-testid="account-option-all"
+                onClick={() => setSelectedAccount(null)}
+                aria-pressed={selectedAccount === null}
+                style={accountPillStyle(selectedAccount === null, '#0D9488')}
+              >
+                All Accounts
+              </button>
+              {accounts.map((acc) => {
+                const meta = getAccountTypeMeta(acc.account_type);
+                const Icon = meta.Icon;
+                const active = selectedAccount === acc.id;
+                return (
+                  <button
+                    type="button"
+                    key={acc.id}
+                    data-testid={`account-option-${acc.id}`}
+                    onClick={() => setSelectedAccount(acc.id)}
+                    aria-pressed={active}
+                    style={accountPillStyle(active, meta.color)}
+                  >
+                    <Icon size={14} />
+                    {acc.name}
+                    <span style={{ opacity: 0.75, fontWeight: 500 }}>· {meta.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Account Summary */}
+      <div className="card" data-testid="account-summary" style={{ marginBottom: '24px' }}>
+        <h3 style={{ marginBottom: '4px', fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-main)' }}>Account Summary</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '16px' }}>
+          Balances and totals per account, computed from your transactions.
+        </p>
+        {accountsLoading ? (
+          <div className="skeleton" style={{ height: '80px', width: '100%' }}></div>
+        ) : accountsError ? (
+          <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'var(--debit-bg)', color: 'var(--debit-text)' }}>{accountsError}</div>
+        ) : accountSummary.length === 0 ? (
+          <div data-testid="accounts-empty" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No accounts yet.</div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+            {accountSummary.map((row) => {
+              const meta = getAccountTypeMeta(row.account_type);
+              const isSelected = row.account_id === selectedAccount;
+              return (
+                <div
+                  key={row.account_id}
+                  data-testid={`account-summary-card-${row.account_id}`}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '8px',
+                    border: `1px solid ${isSelected ? meta.color : 'var(--border-color)'}`,
+                    boxShadow: isSelected ? `0 0 0 1px ${meta.color}` : 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{row.name}</span>
+                    <span data-testid={`account-type-${row.account_id}`} style={{ whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 700, color: meta.color, border: `1px solid ${meta.color}`, borderRadius: '999px', padding: '2px 8px' }}>{meta.label}</span>
+                  </div>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 700, color: row.balance_nature === 'owed' ? 'var(--debit-text)' : 'var(--text-main)' }}>
+                    {formatAmount(row.current_balance, row.currency)}
+                    {row.balance_nature === 'owed' && <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)' }}> owed</span>}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '12px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Credits</div>
+                      <div data-testid={`account-credits-${row.account_id}`}>{formatAmount(row.total_credits, row.currency)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Debits</div>
+                      <div data-testid={`account-debits-${row.account_id}`}>{formatAmount(row.total_debits, row.currency)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Transactions</div>
+                      <div data-testid={`account-count-${row.account_id}`}>{row.transaction_count}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Date Range Controls */}
@@ -177,6 +345,7 @@ const Dashboard = () => {
         <MerchantAnalytics
           startDate={useCustom ? customStart : getPresetDates(preset).start}
           endDate={useCustom ? customEnd : getPresetDates(preset).end}
+          accountId={selectedAccount !== null ? selectedAccount : undefined}
         />
       </div>
 

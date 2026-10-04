@@ -1,5 +1,4 @@
 from typing import List, Optional
-from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -74,6 +73,35 @@ def list_accounts(
     derived_by_id = crud.get_accounts_balances(db, accounts)
     return [
         _serialize(account, derived_by_id[account.id])
+        for account in accounts
+    ]
+
+
+@router.get("/accounts/summary")
+def get_accounts_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Per-account summary for the dashboard: balances and totals.
+
+    Registered before ``/accounts/{account_id}`` so the literal path is never
+    parsed as an integer id. Every figure is derived from stored transactions
+    on the backend; clients only display the values returned here.
+    """
+    accounts = crud.get_accounts(db, current_user.id)
+    derived = crud.get_accounts_balances(db, accounts)
+    return [
+        {
+            "account_id": account.id,
+            "name": account.name,
+            "account_type": account.account_type,
+            "currency": account.currency,
+            "current_balance": derived[account.id]["current_balance"],
+            "balance_nature": derived[account.id]["balance_nature"],
+            "total_credits": derived[account.id]["total_credits"],
+            "total_debits": derived[account.id]["total_debits"],
+            "transaction_count": derived[account.id]["transaction_count"],
+        }
         for account in accounts
     ]
 
@@ -164,24 +192,3 @@ def assign_transaction_account(
     if not updated:
         raise HTTPException(status_code=404, detail="Transaction not found.")
     return updated
-
-@router.get("/summary")
-def get_accounts_summary(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    accounts = crud.get_accounts(db, current_user.id)
-    balances = crud.get_accounts_balances(db, current_user.id, accounts=accounts)
-    res = []
-    for a in accounts:
-        res.append({
-            "account_id": a.id,
-            "name": a.name,
-            "account_type": a.account_type,
-            "currency": a.currency,
-            "current_balance": balances.get(a.id, Decimal("0")),
-            "total_credits": balances.get(f"{a.id}:credits", Decimal("0")),
-            "total_debits": balances.get(f"{a.id}:debits", Decimal("0")),
-            "transaction_count": balances.get(f"{a.id}:count", 0),
-        })
-    return res
