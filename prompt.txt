@@ -1,18 +1,88 @@
-Verify Phase 4B only. Do NOT modify any files.
+Continue Phase 4B — frontend only.
 
-Answer ONLY these:
+Do NOT modify backend logic.
 
-1. Is `GET /api/accounts/summary` implemented? YES/NO
-2. Which existing analytics endpoints accept `account_id`? List them.
-3. When `account_id` is omitted, do existing analytics behave exactly as before? YES/NO
-4. When `account_id` is provided, are only that account's transactions included? YES/NO
-5. Are NULL-account transactions excluded when filtering by an account? YES/NO
-6. Are split transactions protected from double counting? YES/NO
-7. Are foreign account IDs rejected? YES/NO
-8. How many new tests were added?
-9. Current backend test result?
-10. Current frontend test result?
+Build the account UI using the existing APIs.
 
-If any answer is NO, give the exact file/function that is missing or incorrect.
+1. Add an Account Selector to the Dashboard.
 
-STOP after answering.
+Options:
+
+* All Accounts
+* every active user account
+
+2. When "All Accounts" is selected:
+
+* existing dashboard behavior remains unchanged
+* do not send account_id
+
+3. When a specific account is selected:
+
+* pass account_id to supported analytics endpoints
+* refresh the analytics data
+* show which account is currently selected
+
+4. Add an Account Summary section/card showing:
+
+* account name
+* account type
+* currency
+* current balance
+* total credits
+* total debits
+* transaction count
+
+5. Clearly distinguish:
+
+* All Accounts
+* Bank
+* Credit Card
+* Cash
+* Wallet
+* Investment
+* Other
+
+6. Handle:
+
+* loading
+* empty accounts
+* API error
+* account selection
+* authentication failure
+
+IMPORTANT:
+
+* Do NOT calculate balances, totals, percentages, or financial metrics in React.
+* Use backend values directly.
+* Do NOT modify transaction/category/split logic.
+* Do NOT modify velocity, goals, notifications, recurring, or anomaly logic.
+* Do NOT add bank integration.
+* Do NOT add currency conversion.
+* Do NOT duplicate backend formulas.
+
+Tests:
+
+* account selector renders
+* All Accounts behavior
+* account selection
+* correct account_id request
+* analytics refresh
+* account summary rendering
+* multiple accounts
+* empty accounts
+* loading
+* API error
+* authentication
+* existing dashboard behavior without account_id
+
+Run full backend + frontend tests and npm build.
+
+STOP and report:
+
+1. files changed
+2. account selector integration
+3. account summary
+4. analytics filtering UI
+5. tests added
+6. backend/frontend/total tests
+7. limitations
