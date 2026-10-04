@@ -1,88 +1,46 @@
-Continue Phase 4B — frontend only.
+Start Phase 4C — Account-Aware Spending Velocity.
 
-Do NOT modify backend logic.
+FIRST STEP ONLY: backend.
 
-Build the account UI using the existing APIs.
+Extend the existing spending velocity calculation to accept optional `account_id`.
 
-1. Add an Account Selector to the Dashboard.
+Requirements:
 
-Options:
+* Existing behavior unchanged when account_id is omitted.
+* When account_id is provided, only transactions belonging to that account are used.
+* Account must belong to authenticated user.
+* Foreign/nonexistent account_id → 404.
+* NULL-account transactions excluded when a specific account is selected.
+* Preserve the existing velocity algorithm exactly.
+* Do NOT change thresholds.
+* Do NOT change baseline methodology.
+* Do NOT change window calculations.
+* Do NOT modify notifications.
+* Do NOT modify frontend yet.
 
-* All Accounts
-* every active user account
-
-2. When "All Accounts" is selected:
-
-* existing dashboard behavior remains unchanged
-* do not send account_id
-
-3. When a specific account is selected:
-
-* pass account_id to supported analytics endpoints
-* refresh the analytics data
-* show which account is currently selected
-
-4. Add an Account Summary section/card showing:
-
-* account name
-* account type
-* currency
-* current balance
-* total credits
-* total debits
-* transaction count
-
-5. Clearly distinguish:
-
-* All Accounts
-* Bank
-* Credit Card
-* Cash
-* Wallet
-* Investment
-* Other
-
-6. Handle:
-
-* loading
-* empty accounts
-* API error
-* account selection
-* authentication failure
-
-IMPORTANT:
-
-* Do NOT calculate balances, totals, percentages, or financial metrics in React.
-* Use backend values directly.
-* Do NOT modify transaction/category/split logic.
-* Do NOT modify velocity, goals, notifications, recurring, or anomaly logic.
-* Do NOT add bank integration.
-* Do NOT add currency conversion.
-* Do NOT duplicate backend formulas.
+Reuse the existing spending velocity service.
+Do not duplicate calculations.
 
 Tests:
 
-* account selector renders
-* All Accounts behavior
-* account selection
-* correct account_id request
-* analytics refresh
-* account summary rendering
+* existing behavior without account_id
+* account-filtered velocity
+* foreign account
+* nonexistent account
+* NULL-account exclusion
 * multiple accounts
-* empty accounts
-* loading
-* API error
-* authentication
-* existing dashboard behavior without account_id
+* split transaction correctness
+* baseline correctness
+* notification behavior remains unchanged
+* existing velocity regression tests
 
-Run full backend + frontend tests and npm build.
+Run backend tests and npm build.
 
 STOP and report:
 
-1. files changed
-2. account selector integration
-3. account summary
-4. analytics filtering UI
-5. tests added
-6. backend/frontend/total tests
-7. limitations
+1. endpoint changed
+2. account filtering
+3. algorithm preservation
+4. tests added
+5. backend/frontend/total tests
+6. limitations
