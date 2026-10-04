@@ -13,6 +13,16 @@ def parse_month(month_str: str) -> tuple[int, int]:
     except ValueError:
         raise ValueError("Month must be in YYYY-MM format")
 
+def _apply_account_filter(query, account_id: Optional[int]):
+    """Restrict a Transaction query to one account when account_id is given.
+
+    Omitting account_id leaves the query untouched, so existing behaviour is
+    byte-for-byte unchanged. A specific account excludes NULL-account rows.
+    """
+    if account_id is not None:
+        query = query.filter(Transaction.account_id == account_id)
+    return query
+
 def _get_monthly_totals(db: Session, user_id: int, category: Optional[str] = None,
                         start_date: Optional[date] = None, end_date: Optional[date] = None,
                         transaction_type: str = 'debit') -> Dict[str, Decimal]:
@@ -34,7 +44,8 @@ def _get_monthly_totals(db: Session, user_id: int, category: Optional[str] = Non
         monthly[key] = monthly.get(key, Decimal('0')) + t.amount
     return monthly
 
-def get_daily_run_rate(category: Optional[str], month: str, db: Session, user_id: int) -> Dict[str, Any]:
+def get_daily_run_rate(category: Optional[str], month: str, db: Session, user_id: int,
+                       account_id: Optional[int] = None) -> Dict[str, Any]:
     year, m = parse_month(month)
     start_date = date(year, m, 1)
     end_date = date(year, m, calendar.monthrange(year, m)[1])
@@ -48,6 +59,8 @@ def get_daily_run_rate(category: Optional[str], month: str, db: Session, user_id
 
     if category:
         query = query.filter(func.lower(Transaction.category) == category.lower())
+
+    query = _apply_account_filter(query, account_id)
 
     txs = query.all()
     if len(txs) < 3:
@@ -66,8 +79,9 @@ def get_daily_run_rate(category: Optional[str], month: str, db: Session, user_id
         "latest_transaction_date": latest_date.isoformat()
     }
 
-def forecast_month_end_spend(category: Optional[str], month: str, db: Session, user_id: int) -> Dict[str, Any]:
-    run_rate_data = get_daily_run_rate(category, month, db, user_id)
+def forecast_month_end_spend(category: Optional[str], month: str, db: Session, user_id: int,
+                             account_id: Optional[int] = None) -> Dict[str, Any]:
+    run_rate_data = get_daily_run_rate(category, month, db, user_id, account_id=account_id)
     if "error" in run_rate_data:
         return run_rate_data
 
@@ -92,7 +106,9 @@ def forecast_month_end_spend(category: Optional[str], month: str, db: Session, u
         "total_days": total_days_in_month
     }
 
-def get_historical_average(category: Optional[str], db: Session, user_id: int, num_past_months: int = 3, exclude_month: Optional[str] = None) -> Dict[str, Any]:
+def get_historical_average(category: Optional[str], db: Session, user_id: int, num_past_months: int = 3,
+                           exclude_month: Optional[str] = None,
+                           account_id: Optional[int] = None) -> Dict[str, Any]:
     query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.transaction_type == 'debit'
@@ -105,6 +121,8 @@ def get_historical_average(category: Optional[str], db: Session, user_id: int, n
         year, m = parse_month(exclude_month)
         cutoff_date = date(year, m, 1)
         query = query.filter(Transaction.date < cutoff_date)
+
+    query = _apply_account_filter(query, account_id)
 
     txs = query.all()
     if not txs:
@@ -137,7 +155,8 @@ def get_moving_average(monthly_totals: Dict[str, Decimal], num_months: int = 3) 
     total = sum(monthly_totals[m] for m in recent)
     return total / Decimal(str(len(recent)))
 
-def get_improved_forecast(category: Optional[str], month: str, db: Session, user_id: int) -> Dict[str, Any]:
+def get_improved_forecast(category: Optional[str], month: str, db: Session, user_id: int,
+                          account_id: Optional[int] = None) -> Dict[str, Any]:
     year, m = parse_month(month)
     month_start = date(year, m, 1)
     month_end = date(year, m, calendar.monthrange(year, m)[1])
@@ -158,6 +177,8 @@ def get_improved_forecast(category: Optional[str], month: str, db: Session, user
     if category:
         actual_query = actual_query.filter(func.lower(Transaction.category) == category.lower())
 
+    actual_query = _apply_account_filter(actual_query, account_id)
+
     actual_txs = actual_query.all()
     actual_spend = sum(t.amount for t in actual_txs) if actual_txs else Decimal('0')
     num_transactions = len(actual_txs)
@@ -169,6 +190,8 @@ def get_improved_forecast(category: Optional[str], month: str, db: Session, user
     )
     if category:
         hist_query = hist_query.filter(func.lower(Transaction.category) == category.lower())
+
+    hist_query = _apply_account_filter(hist_query, account_id)
 
     hist_txs = hist_query.all()
     hist_monthly: Dict[str, Decimal] = {}
@@ -254,24 +277,29 @@ def _describe_method(method: str, days_passed: int, months_of_history: int) -> s
     }
     return descriptions.get(method, "Forecast method unknown.")
 
-def generate_overspend_alerts(db: Session, user_id: int, month: Optional[str] = None) -> List[Dict[str, Any]]:
+def generate_overspend_alerts(db: Session, user_id: int, month: Optional[str] = None,
+                              account_id: Optional[int] = None) -> List[Dict[str, Any]]:
     if not month:
         month = datetime.today().strftime("%Y-%m")
 
-    categories = db.query(Transaction.category).filter(
-        Transaction.user_id == user_id,
-        Transaction.transaction_type == 'debit'
+    categories = _apply_account_filter(
+        db.query(Transaction.category).filter(
+            Transaction.user_id == user_id,
+            Transaction.transaction_type == 'debit'
+        ),
+        account_id,
     ).distinct().all()
     category_names = [c[0] for c in categories if c[0]]
 
     alerts = []
 
     for cat in category_names:
-        forecast_data = forecast_month_end_spend(cat, month, db, user_id)
+        forecast_data = forecast_month_end_spend(cat, month, db, user_id, account_id=account_id)
         if "error" in forecast_data:
             continue
 
-        hist_data = get_historical_average(cat, db, user_id, num_past_months=3, exclude_month=month)
+        hist_data = get_historical_average(cat, db, user_id, num_past_months=3, exclude_month=month,
+                                           account_id=account_id)
         if "error" in hist_data:
             continue
 
@@ -295,9 +323,10 @@ def generate_overspend_alerts(db: Session, user_id: int, month: Optional[str] = 
                 "message": f"Forecasted to overspend by {percent_over}% in {cat} compared to historical average."
             })
 
-    forecast_data = forecast_month_end_spend(None, month, db, user_id)
+    forecast_data = forecast_month_end_spend(None, month, db, user_id, account_id=account_id)
     if "error" not in forecast_data:
-        hist_data = get_historical_average(None, db, user_id, num_past_months=3, exclude_month=month)
+        hist_data = get_historical_average(None, db, user_id, num_past_months=3, exclude_month=month,
+                                           account_id=account_id)
         if "error" not in hist_data:
             forecast_total = forecast_data["forecasted_total"]
             hist_avg = hist_data["historical_average"]

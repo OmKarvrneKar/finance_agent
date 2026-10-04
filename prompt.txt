@@ -1,52 +1,59 @@
-Start Phase 4D — Account-Aware Forecast.
+Continue Phase 4D — frontend only.
 
-FIRST STEP ONLY: backend.
-
-Extend the existing forecasting endpoint/service with optional `account_id`.
+Wire the existing Forecast UI to the Dashboard account selector.
 
 Requirements:
 
-* account_id omitted → existing forecast behavior EXACTLY unchanged
-* account_id provided → forecast only transactions belonging to that account
-* account must belong to authenticated user
-* foreign/nonexistent account_id → 404
-* NULL-account transactions excluded when a specific account is selected
-* Preserve the existing forecasting algorithm exactly
-* Do NOT add seasonality/ML/Prophet yet
-* Do NOT change forecast formulas
-* Do NOT change date handling
-* Do NOT modify velocity
-* Do NOT modify goals
-* Do NOT modify notifications
-* Do NOT build frontend yet
+* All Accounts:
 
-Important:
-The historical data used by the forecast must also use the same account filter. Do not filter only the current-period spending.
+  * omit account_id
+  * preserve existing forecast behavior
 
-Reuse existing forecasting service. Do not duplicate formulas.
+* Specific account:
+
+  * pass account_id to supported forecast endpoints
+  * refresh forecast when account changes
+
+Wire all existing forecast views:
+
+* summary
+* improved forecast
+* alerts
+* category forecast
+
+Do NOT calculate forecast values in React.
+Do NOT change forecast formulas.
+Do NOT modify backend logic.
+Do NOT add ML/seasonality.
+Do NOT modify velocity, goals, notifications, or financial health.
+
+Handle:
+
+* loading
+* API errors
+* insufficient data
+* empty state
+* account switching
 
 Tests:
 
-* existing forecast unchanged without account_id
-* account-filtered forecast
-* historical account filtering
-* foreign account
-* nonexistent account
-* NULL-account exclusion
-* multiple accounts
-* insufficient data
-* Decimal/rounding correctness
-* date boundary behavior
-* existing forecast regression tests
+* All Accounts → no account_id
+* selected account → account_id
+* account switching refresh
+* summary
+* improved forecast
+* alerts
+* category forecast
+* error/loading states
 
-Run backend tests and npm build.
+Run full backend + frontend tests and npm build.
 
 STOP and report:
 
-1. endpoint changed
-2. account filtering
-3. historical filtering
-4. algorithm preservation
+1. files changed
+2. forecast views wired
+3. All Accounts behavior
+4. account switching
 5. tests added
 6. backend/frontend/total tests
 7. limitations
