@@ -322,7 +322,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <AnomalyAlerts />
+      <AnomalyAlerts accountId={selectedAccount !== null ? selectedAccount : undefined} />
       <ForecastAlerts accountId={selectedAccount !== null ? selectedAccount : undefined} />
 
       {/* Health Score */}

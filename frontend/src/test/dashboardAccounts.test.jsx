@@ -41,7 +41,9 @@ vi.mock('../components/ForecastCard', () => ({
 vi.mock('../components/HealthScoreCard', () => ({
   default: ({ accountId }) => <div data-testid="health-score-card" data-account-id={accountId} />,
 }));
-vi.mock('../components/AnomalyAlerts', () => ({ default: () => <div data-testid="anomaly-alerts" /> }));
+vi.mock('../components/AnomalyAlerts', () => ({
+  default: ({ accountId }) => <div data-testid="anomaly-alerts" data-account-id={accountId} />,
+}));
 vi.mock('../components/SavingsRecommendations', () => ({ default: () => <div data-testid="savings-recommendations" /> }));
 vi.mock('../components/RecurringBillsCalendar', () => ({ default: () => <div data-testid="recurring-bills-calendar" /> }));
 vi.mock('../components/SpendingVelocityCard', () => ({
@@ -303,6 +305,21 @@ describe('Dashboard account selector and summary', () => {
     fireEvent.click(screen.getByTestId('account-option-all'));
     await waitFor(() => {
       expect(screen.getByTestId('health-score-card')).not.toHaveAttribute('data-account-id');
+    });
+  });
+
+  it('anomaly alerts receive the selected account', async () => {
+    renderWithAuth(<Dashboard />);
+    await waitForSelector();
+    await waitFor(() => expect(screen.getByTestId('anomaly-alerts')).toBeInTheDocument());
+    expect(screen.getByTestId('anomaly-alerts')).not.toHaveAttribute('data-account-id');
+    fireEvent.click(screen.getByTestId('account-option-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('anomaly-alerts')).toHaveAttribute('data-account-id', '1');
+    });
+    fireEvent.click(screen.getByTestId('account-option-all'));
+    await waitFor(() => {
+      expect(screen.getByTestId('anomaly-alerts')).not.toHaveAttribute('data-account-id');
     });
   });
 });

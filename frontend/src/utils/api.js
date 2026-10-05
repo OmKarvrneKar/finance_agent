@@ -275,8 +275,11 @@ export const getSpendingVelocity = async ({ window_days = 3, account_id } = {}) 
 };
 
 // Anomalies
-export const getAnomalies = async () => {
-  const response = await api.get('/anomalies');
+export const getAnomalies = async (account_id) => {
+  const params = new URLSearchParams();
+  if (account_id !== undefined) params.set('account_id', account_id);
+  const qs = params.toString();
+  const response = await api.get(`/anomalies${qs ? '?' + qs : ''}`);
   return response.data;
 };
 

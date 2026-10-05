@@ -2,16 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { AlertOctagon, AlertTriangle, Info, Check, X, ThumbsUp } from 'lucide-react';
 import { getAnomalies, dismissAnomaly, confirmAnomaly } from '../utils/api';
 
-const AnomalyAlerts = () => {
+const AnomalyAlerts = ({ accountId }) => {
   const [anomalies, setAnomalies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchAnomalies = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const data = await getAnomalies();
+      const data = await getAnomalies(accountId);
       setAnomalies(data);
     } catch (err) {
       console.error(err);
+      setError('Failed to load anomalies');
     } finally {
       setLoading(false);
     }
@@ -19,7 +23,7 @@ const AnomalyAlerts = () => {
 
   useEffect(() => {
     fetchAnomalies();
-  }, []);
+  }, [accountId]);
 
   const handleDismiss = async (id) => {
     setAnomalies(prev => prev.filter(a => a.id !== id));
@@ -42,6 +46,17 @@ const AnomalyAlerts = () => {
   };
 
   if (loading) return null;
+
+  if (error) {
+    return (
+      <div className="card" style={{ marginBottom: '32px', padding: '24px', borderLeft: '4px solid var(--debit-text)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--debit-text)' }}>
+          <AlertOctagon size={18} />
+          <span>{error}</span>
+        </div>
+      </div>
+    );
+  }
 
   if (anomalies.length === 0) {
     return (

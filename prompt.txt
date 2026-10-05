@@ -1,63 +1,70 @@
-Continue Phase 4E — frontend only.
+FULL PROJECT AUDIT ONLY.
 
-Wire the existing Financial Health UI to the Dashboard account selector.
+Do NOT modify any files.
 
-Requirements:
+Inspect the entire project and report the actual current state.
 
-* All Accounts:
+Cover:
 
-  * omit account_id completely
-  * preserve existing health score behavior
+1. Backend:
 
-* Specific account:
+* all API endpoints
+* services
+* database models/tables
+* authentication/security
+* user/account isolation
 
-  * pass account_id to GET /api/health
-  * refresh health when account selection changes
+2. Frontend:
 
-Display backend values directly:
+* pages
+* major components
+* dashboard features
+* account-aware features
 
-* health score
-* income
-* expenses
-* savings rate
-* income stability
-* spending consistency
-* budget adherence
-* existing health description/recommendations
+3. Financial features:
 
-Do NOT calculate health metrics or score in React.
-Do NOT change the scoring formula.
-Do NOT modify backend logic.
-Do NOT modify velocity, forecast, goals, notifications, or analytics.
+* transactions
+* categories
+* splits
+* recurring
+* goals
+* analytics
+* velocity
+* forecast
+* financial health
+* anomalies
+* notifications
+* accounts
 
-Handle:
+4. For each major feature mark:
+   DONE / PARTIAL / MISSING
 
-* loading
-* API error
-* empty/insufficient data
-* account switching
-* All Accounts
+5. Find:
 
-Tests:
+* TODO/FIXME
+* duplicated financial calculations
+* dead/unused code
+* inconsistent API behavior
+* security risks
+* data-integrity risks
+* known limitations
 
-* All Accounts → no account_id
-* selected account → account_id
-* account switching refresh
-* score rendering
-* metric rendering
-* loading
-* error
-* insufficient data
-* existing health UI behavior
+6. Tests:
 
-Run full backend + frontend tests and npm build.
+* backend count
+* frontend count
+* total
+* failures
+* build status
 
-STOP and report:
+7. Roadmap:
+   Give the 10 most valuable remaining features/fixes, ranked by priority.
+   Do NOT invent features that aren't relevant to this project.
 
-1. files changed
-2. account wiring
-3. All Accounts behavior
-4. metrics displayed
-5. tests added
-6. backend/frontend/total tests
-7. limitations
+IMPORTANT:
+Do not change code.
+Do not install packages.
+Do not refactor.
+Do not fix anything.
+
+STOP after the audit report.

@@ -14,11 +14,14 @@ def normalize_merchant(name: str) -> str:
         name = name.replace(p, " ")
     return " ".join(name.split())
 
-def detect_recurring_price_jumps(db: Session, user_id: int, threshold_percent: float = 20):
-    txs = db.query(Transaction).filter(
+def detect_recurring_price_jumps(db: Session, user_id: int, threshold_percent: float = 20, account_id = None):
+    query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.is_recurring == True
-    ).order_by(Transaction.date.asc()).all()
+    )
+    if account_id is not None:
+        query = query.filter(Transaction.account_id == account_id)
+    txs = query.order_by(Transaction.date.asc()).all()
     groups = defaultdict(list)
     for tx in txs:
         groups[normalize_merchant(tx.description)].append(tx)
@@ -51,11 +54,14 @@ def detect_recurring_price_jumps(db: Session, user_id: int, threshold_percent: f
             
     return anomalies
 
-def detect_duplicate_charges(db: Session, user_id: int, window_hours: int = 48):
-    txs = db.query(Transaction).filter(
+def detect_duplicate_charges(db: Session, user_id: int, window_hours: int = 48, account_id = None):
+    query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.transaction_type == 'debit'
-    ).order_by(Transaction.date.asc()).all()
+    )
+    if account_id is not None:
+        query = query.filter(Transaction.account_id == account_id)
+    txs = query.order_by(Transaction.date.asc()).all()
     groups = defaultdict(list)
     for tx in txs:
         groups[(normalize_merchant(tx.description), tx.amount)].append(tx)
@@ -87,11 +93,14 @@ def detect_duplicate_charges(db: Session, user_id: int, window_hours: int = 48):
                     })
     return anomalies
 
-def detect_unfamiliar_large_merchant(db: Session, user_id: int, std_dev_multiplier: float = 2.0, min_history_transactions: int = 10):
-    txs = db.query(Transaction).filter(
+def detect_unfamiliar_large_merchant(db: Session, user_id: int, std_dev_multiplier: float = 2.0, min_history_transactions: int = 10, account_id = None):
+    query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.transaction_type == 'debit'
-    ).order_by(Transaction.date.asc()).all()
+    )
+    if account_id is not None:
+        query = query.filter(Transaction.account_id == account_id)
+    txs = query.order_by(Transaction.date.asc()).all()
     if len(txs) < min_history_transactions:
         return []
         
@@ -129,10 +138,10 @@ def detect_unfamiliar_large_merchant(db: Session, user_id: int, std_dev_multipli
         
     return anomalies
 
-def generate_anomaly_report(db: Session, user_id: int):
-    price_jumps = detect_recurring_price_jumps(db, user_id)
-    duplicates = detect_duplicate_charges(db, user_id)
-    unfamiliar = detect_unfamiliar_large_merchant(db, user_id)
+def generate_anomaly_report(db: Session, user_id: int, account_id = None):
+    price_jumps = detect_recurring_price_jumps(db, user_id, account_id=account_id)
+    duplicates = detect_duplicate_charges(db, user_id, account_id=account_id)
+    unfamiliar = detect_unfamiliar_large_merchant(db, user_id, account_id=account_id)
     
     all_anomalies = price_jumps + duplicates + unfamiliar
     
