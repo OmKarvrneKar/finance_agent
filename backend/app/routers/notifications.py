@@ -142,6 +142,9 @@ def delete_notification(
 # analytics read paths, so repeatedly refreshing a page never spams a user.
 # Each sync reuses the existing calculation service unchanged and is
 # deduplicated by event_key, so calling it repeatedly is safe.
+# Write-path flows (budget save, statement upload, receipt confirm) invoke the
+# same producers through notification_producers.sync_after_* hooks, so both
+# paths share one deduplication mechanism.
 
 
 @router.post("/notifications/sync/budgets")

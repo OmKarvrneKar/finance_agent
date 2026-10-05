@@ -7,9 +7,13 @@ formula is duplicated or altered here:
 * velocity -> ``services.spending_velocity.get_spending_velocity`` (alert_level)
 * anomaly  -> ``services.anomalies.generate_anomaly_report`` (signature ``id``)
 
-Producers are invoked explicitly (see ``routers/notifications.py`` sync
-endpoints), never implicitly on a dashboard/analytics read path, so repeated
-reads cannot spam notifications.
+Producers are invoked explicitly — from the ``/notifications/sync/*``
+endpoints and from write-path hooks (budget save, statement upload, receipt
+confirm) — never implicitly on a dashboard/analytics read path, so repeated
+reads cannot spam notifications. The hooks ``sync_after_budget_change`` and
+``sync_after_transaction_change`` at the bottom of this module are the
+integration points used by the routers; they only orchestrate these
+producers, contain no notification logic of their own, and never raise.
 
 Event keys use only identifiers that already exist in the codebase:
 ``BudgetGoal.id``, the velocity window dates, and the anomaly signature
@@ -332,3 +336,50 @@ notification_type="anomaly",
         result["created" if emitted["created"] else "deduplicated"] += 1
 
     return result
+
+
+def sync_after_budget_change(db: Session, user_id: int, month: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Write-path hook: run the budget producer after a budget cap is saved.
+
+    Reuses ``sync_budget_notifications`` unchanged. Never raises — a producer
+    failure is logged and skipped so the host endpoint's response is
+    unaffected (the producer itself already isolates calculation and emit
+    errors; this guard covers anything unexpected).
+    """
+    try:
+        return sync_budget_notifications(db, user_id, month=month)
+    except Exception as exc:  # noqa: BLE001 - hooks must not break the host flow
+        logger.error(
+            "Budget-change notification hook failed for user=%s: %s: %s",
+            user_id,
+            exc.__class__.__name__,
+            exc,
+        )
+        return None
+
+
+def sync_after_transaction_change(db: Session, user_id: int, window_days: int = 3) -> List[Dict[str, Any]]:
+    """Write-path hook: run budget + velocity + anomaly producers after transactions changed.
+
+    Used by transaction-ingestion flows (statement upload, receipt confirm).
+    Each producer is failure-isolated: one failing producer is logged and
+    skipped while the others still run, and the hook never raises.
+    """
+    results: List[Dict[str, Any]] = []
+    hooks = (
+        ("budget", sync_budget_notifications, {}),
+        ("velocity", sync_velocity_notifications, {"window_days": window_days}),
+        ("anomaly", sync_anomaly_notifications, {}),
+    )
+    for name, producer, kwargs in hooks:
+        try:
+            results.append(producer(db, user_id, **kwargs))
+        except Exception as exc:  # noqa: BLE001 - hooks must not break the host flow
+            logger.error(
+                "Transaction-change notification hook (%s) failed for user=%s: %s: %s",
+                name,
+                user_id,
+                exc.__class__.__name__,
+                exc,
+            )
+    return results

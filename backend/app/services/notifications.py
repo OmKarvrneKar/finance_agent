@@ -1,8 +1,9 @@
 """Notification creation with deterministic event deduplication.
 
 Notifications are never generated implicitly on read paths. They are created
-explicitly by an event producer (a future phase will wire budget/velocity/anomaly
-detectors to this service). Every call is user-scoped.
+explicitly by an event producer — either an explicit ``/notifications/sync/*``
+call or a write-path hook (budget save, statement upload, receipt confirm)
+that reuses the same producers. Every call is user-scoped.
 
 Deduplication
 -------------

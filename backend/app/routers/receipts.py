@@ -14,6 +14,7 @@ from app.config import Config
 from app.database.db import get_db, PendingReceipt, Transaction, User
 from app.models import schemas
 from app.services import receipts
+from app.services import notification_producers
 from app.auth import get_current_user
 from app.dependencies import upload_rate_limit
 
@@ -169,7 +170,9 @@ def confirm_receipt(
     db.add(tx)
     db.delete(pending)
     db.commit()
-    
+
+    notification_producers.sync_after_transaction_change(db, current_user.id)
+
     return {"message": "Receipt confirmed and saved."}
 
 @router.post("/receipts/{receipt_id}/discard")

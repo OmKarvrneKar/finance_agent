@@ -1,70 +1,58 @@
-FULL PROJECT AUDIT ONLY.
+Start Phase 5B — Manual Transaction Creation.
 
-Do NOT modify any files.
+FIRST STEP ONLY: backend.
 
-Inspect the entire project and report the actual current state.
+Inspect the existing Transaction model, transaction CRUD/service, category handling, account handling, split handling, and validation.
 
-Cover:
+Add:
+POST /api/transactions
 
-1. Backend:
+Requirements:
+- authenticated user only
+- transaction belongs to the authenticated user
+- optional account_id
+- if account_id is provided, it must belong to the user
+- support income/credit and expense/debit using the existing transaction representation
+- amount must use existing Decimal/money handling
+- date must use existing date handling
+- category must use existing category validation
+- merchant/description fields should reuse existing schema conventions
+- preserve existing split-transaction model; do NOT create a second split system
+- prevent invalid amounts/types
+- do not allow another user's account_id
+- do not change existing CSV/OCR ingestion
 
-* all API endpoints
-* services
-* database models/tables
-* authentication/security
-* user/account isolation
+After successful creation:
+- use the existing notification sync hook where appropriate
+- do not duplicate notification logic
 
-2. Frontend:
+Tests:
+- authenticated creation
+- expense
+- income
+- account ownership
+- foreign account rejection
+- invalid amount
+- invalid transaction type
+- category validation
+- Decimal precision
+- date handling
+- notification integration
+- existing transaction regression tests
 
-* pages
-* major components
-* dashboard features
-* account-aware features
+Do NOT build frontend yet.
+Do NOT add recurring transactions.
+Do NOT add editing/deleting in this step.
+Do NOT change analytics formulas.
 
-3. Financial features:
+Run backend tests and npm build.
 
-* transactions
-* categories
-* splits
-* recurring
-* goals
-* analytics
-* velocity
-* forecast
-* financial health
-* anomalies
-* notifications
-* accounts
-
-4. For each major feature mark:
-   DONE / PARTIAL / MISSING
-
-5. Find:
-
-* TODO/FIXME
-* duplicated financial calculations
-* dead/unused code
-* inconsistent API behavior
-* security risks
-* data-integrity risks
-* known limitations
-
-6. Tests:
-
-* backend count
-* frontend count
-* total
-* failures
-* build status
-
-7. Roadmap:
-   Give the 10 most valuable remaining features/fixes, ranked by priority.
-   Do NOT invent features that aren't relevant to this project.
-
-IMPORTANT:
-Do not change code.
-Do not install packages.
-Do not refactor.
-Do not fix anything.
-
-STOP after the audit report.
+STOP and report:
+1. endpoint
+2. request/response schema
+3. validation
+4. account ownership
+5. notification integration
+6. tests added
+7. backend/frontend/total tests
+8. limitations

@@ -6,6 +6,7 @@ from decimal import Decimal
 from app.database.db import get_db, BudgetGoal, SavingsGoal, User
 from app.models import schemas
 from app.services import budgets
+from app.services import notification_producers
 from app.auth import get_current_user
 
 router = APIRouter()
@@ -35,6 +36,7 @@ def create_or_update_budget(
         
     db.commit()
     db.refresh(budget)
+    notification_producers.sync_after_budget_change(db, current_user.id)
     return budget
 
 @router.get("/budgets", response_model=List[schemas.BudgetStatusResponse])

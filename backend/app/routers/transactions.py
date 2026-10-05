@@ -11,6 +11,7 @@ from app.database.db import get_db, User
 from app.database import crud
 from app.services.csv_parser import parse_bank_csv
 from app.services.categorizer import categorize_transactions
+from app.services import notification_producers
 from app.models.schemas import UploadSummaryResponse, PaginatedTransactionsResponse, SubscriptionResponse, TransactionUpdate
 from app.auth import get_current_user
 from app.dependencies import upload_rate_limit
@@ -120,7 +121,7 @@ async def upload_statement(
         cat = tx.category
         category_counts[cat] = category_counts.get(cat, 0) + 1
 
-    return {
+    response = {
         "total_transactions": total_tx,
         "total_spent": total_spent,
         "category_breakdown": category_counts,
@@ -128,6 +129,10 @@ async def upload_statement(
         "duplicate_transactions": duplicates,
         "total_in_file": len(categorized_transactions)
     }
+
+    notification_producers.sync_after_transaction_change(db, current_user.id)
+
+    return response
 
 @router.get("/transactions/export")
 def export_transactions(
