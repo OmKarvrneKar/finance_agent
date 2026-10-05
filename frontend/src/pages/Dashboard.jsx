@@ -323,11 +323,11 @@ const Dashboard = () => {
       </div>
 
       <AnomalyAlerts />
-      <ForecastAlerts />
+      <ForecastAlerts accountId={selectedAccount !== null ? selectedAccount : undefined} />
 
       {/* Health Score */}
       <div style={{ marginBottom: '24px' }}>
-        <HealthScoreCard />
+        <HealthScoreCard accountId={selectedAccount !== null ? selectedAccount : undefined} />
       </div>
 
       {/* Spending Velocity */}
@@ -360,7 +360,7 @@ const Dashboard = () => {
       {/* Forecast Card */}
       {!useCustom && preset === 'this_month' && (
         <div style={{ marginBottom: '24px' }}>
-          <ForecastCard />
+          <ForecastCard accountId={selectedAccount !== null ? selectedAccount : undefined} />
         </div>
       )}
 

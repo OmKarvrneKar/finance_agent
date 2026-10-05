@@ -37,15 +37,17 @@ const COMPONENT_LABELS = {
   spending_consistency: 'Spending Consistency',
 };
 
-const HealthScoreCard = () => {
+const HealthScoreCard = ({ accountId }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const result = await getHealthScore();
+        const result = await getHealthScore(accountId);
         setData(result);
         setError(null);
       } catch (err) {
@@ -55,7 +57,7 @@ const HealthScoreCard = () => {
       }
     };
     load();
-  }, []);
+  }, [accountId]);
 
   if (loading) {
     return (

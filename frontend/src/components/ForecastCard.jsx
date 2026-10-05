@@ -20,15 +20,17 @@ const METHOD_LABELS = {
   unknown: 'Unknown',
 };
 
-const ForecastCard = ({ month }) => {
+const ForecastCard = ({ month, accountId }) => {
   const [forecast, setForecast] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const data = await getImprovedForecast(month);
+        const data = await getImprovedForecast(month, '', accountId);
         setForecast(data);
         setError(null);
       } catch (err) {
@@ -38,7 +40,7 @@ const ForecastCard = ({ month }) => {
       }
     };
     load();
-  }, [month]);
+  }, [month, accountId]);
 
   if (loading) {
     return (

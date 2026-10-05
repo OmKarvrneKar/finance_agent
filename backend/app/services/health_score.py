@@ -7,15 +7,18 @@ from app.database.db import Transaction, BudgetGoal
 
 INSUFFICIENT_DATA = "insufficient_data"
 
-def _get_monthly_income_expense(db: Session, user_id: int, num_months: int = 6) -> List[Dict[str, Any]]:
+def _get_monthly_income_expense(db: Session, user_id: int, num_months: int = 6, account_id: Optional[int] = None) -> List[Dict[str, Any]]:
     end_date = date.today()
     start_date = date(end_date.year - 1, end_date.month, 1)
 
-    txs = db.query(Transaction).filter(
+    query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.date >= start_date,
         Transaction.date <= end_date,
-    ).all()
+    )
+    if account_id is not None:
+        query = query.filter(Transaction.account_id == account_id)
+    txs = query.all()
 
     monthly = {}
     for t in txs:
@@ -78,7 +81,7 @@ def _score_savings_rate(rate: Optional[Decimal]) -> Optional[Decimal]:
     return _interpolate_linear(rate, Decimal("0"), Decimal("0"), Decimal("5"), Decimal("25"))
 
 
-def _calculate_budget_adherence(db: Session, user_id: int, monthly_data: List[Dict[str, Any]]) -> Optional[Decimal]:
+def _calculate_budget_adherence(db: Session, user_id: int, monthly_data: List[Dict[str, Any]], account_id: Optional[int] = None) -> Optional[Decimal]:
     budgets = db.query(BudgetGoal).filter(BudgetGoal.user_id == user_id).all()
     if not budgets:
         return None
@@ -88,12 +91,15 @@ def _calculate_budget_adherence(db: Session, user_id: int, monthly_data: List[Di
 
     latest_month = monthly_data[0]
     month_expenses = {}
-    txs = db.query(Transaction).filter(
+    tx_query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.transaction_type == "debit",
         extract("year", Transaction.date) == int(latest_month["month"][:4]),
         extract("month", Transaction.date) == int(latest_month["month"][5:7]),
-    ).all()
+    )
+    if account_id is not None:
+        tx_query = tx_query.filter(Transaction.account_id == account_id)
+    txs = tx_query.all()
 
     for t in txs:
         cat = t.category.lower()
@@ -169,15 +175,15 @@ def _score_spending_consistency(consistency: Optional[Decimal]) -> Optional[Deci
     return consistency.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def calculate_health_score(db: Session, user_id: int) -> Dict[str, Any]:
-    monthly_data = _get_monthly_income_expense(db, user_id, num_months=6)
+def calculate_health_score(db: Session, user_id: int, account_id: Optional[int] = None) -> Dict[str, Any]:
+    monthly_data = _get_monthly_income_expense(db, user_id, num_months=6, account_id=account_id)
 
     has_income = any(m["income"] > 0 for m in monthly_data)
     has_expense = any(m["expense"] > 0 for m in monthly_data)
     has_enough_data = len(monthly_data) >= 2 and has_income and has_expense
 
     savings_rate = _calculate_savings_rate(monthly_data) if has_enough_data else None
-    budget_adherence = _calculate_budget_adherence(db, user_id, monthly_data) if has_enough_data else None
+    budget_adherence = _calculate_budget_adherence(db, user_id, monthly_data, account_id=account_id) if has_enough_data else None
     income_stability = _calculate_income_stability(monthly_data) if has_enough_data else None
     spending_consistency = _calculate_spending_consistency(monthly_data) if has_enough_data else None
 

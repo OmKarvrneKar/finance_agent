@@ -32,7 +32,15 @@ vi.mock('../utils/api', () => ({
   }),
 }));
 
-vi.mock('../components/ForecastAlerts', () => ({ default: () => <div data-testid="forecast-alerts" /> }));
+vi.mock('../components/ForecastAlerts', () => ({
+  default: ({ accountId }) => <div data-testid="forecast-alerts" data-account-id={accountId} />,
+}));
+vi.mock('../components/ForecastCard', () => ({
+  default: ({ accountId }) => <div data-testid="forecast-card" data-account-id={accountId} />,
+}));
+vi.mock('../components/HealthScoreCard', () => ({
+  default: ({ accountId }) => <div data-testid="health-score-card" data-account-id={accountId} />,
+}));
 vi.mock('../components/AnomalyAlerts', () => ({ default: () => <div data-testid="anomaly-alerts" /> }));
 vi.mock('../components/SavingsRecommendations', () => ({ default: () => <div data-testid="savings-recommendations" /> }));
 vi.mock('../components/RecurringBillsCalendar', () => ({ default: () => <div data-testid="recurring-bills-calendar" /> }));
@@ -262,6 +270,39 @@ describe('Dashboard account selector and summary', () => {
     fireEvent.click(screen.getByTestId('account-option-1'));
     await waitFor(() => {
       expect(screen.getByTestId('spending-velocity-card')).toHaveAttribute('data-account-id', '1');
+    });
+  });
+
+  it('forecast views receive the selected account', async () => {
+    renderWithAuth(<Dashboard />);
+    await waitForSelector();
+    await waitFor(() => expect(screen.getByTestId('forecast-card')).toBeInTheDocument());
+    expect(screen.getByTestId('forecast-card')).not.toHaveAttribute('data-account-id');
+    expect(screen.getByTestId('forecast-alerts')).not.toHaveAttribute('data-account-id');
+    fireEvent.click(screen.getByTestId('account-option-2'));
+    await waitFor(() => {
+      expect(screen.getByTestId('forecast-card')).toHaveAttribute('data-account-id', '2');
+      expect(screen.getByTestId('forecast-alerts')).toHaveAttribute('data-account-id', '2');
+    });
+    fireEvent.click(screen.getByTestId('account-option-all'));
+    await waitFor(() => {
+      expect(screen.getByTestId('forecast-card')).not.toHaveAttribute('data-account-id');
+      expect(screen.getByTestId('forecast-alerts')).not.toHaveAttribute('data-account-id');
+    });
+  });
+
+  it('health score card receives the selected account', async () => {
+    renderWithAuth(<Dashboard />);
+    await waitForSelector();
+    await waitFor(() => expect(screen.getByTestId('health-score-card')).toBeInTheDocument());
+    expect(screen.getByTestId('health-score-card')).not.toHaveAttribute('data-account-id');
+    fireEvent.click(screen.getByTestId('account-option-2'));
+    await waitFor(() => {
+      expect(screen.getByTestId('health-score-card')).toHaveAttribute('data-account-id', '2');
+    });
+    fireEvent.click(screen.getByTestId('account-option-all'));
+    await waitFor(() => {
+      expect(screen.getByTestId('health-score-card')).not.toHaveAttribute('data-account-id');
     });
   });
 });

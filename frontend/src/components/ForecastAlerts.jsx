@@ -3,7 +3,7 @@ import { AlertTriangle, TrendingUp, CheckCircle, RefreshCw, Activity } from 'luc
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { getForecastAlerts, getForecastSummary } from '../utils/api';
 
-const ForecastAlerts = () => {
+const ForecastAlerts = ({ accountId }) => {
   const [alerts, setAlerts] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,8 +14,8 @@ const ForecastAlerts = () => {
     setError(null);
     try {
       const [alertsData, summaryData] = await Promise.all([
-        getForecastAlerts(),
-        getForecastSummary()
+        getForecastAlerts('', accountId),
+        getForecastSummary('', accountId)
       ]);
       setAlerts(alertsData);
       setSummary(summaryData);
@@ -29,7 +29,7 @@ const ForecastAlerts = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [accountId]);
 
   const formatCurrency = (val) => `₹${Number(val).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 

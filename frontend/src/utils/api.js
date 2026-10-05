@@ -113,36 +113,49 @@ export const getAllTransactions = async () => {
 };
 
 // Forecast
-export const getForecastSummary = async (month = '') => {
-  const params = month ? `?month=${month}` : '';
-  const response = await api.get(`/forecast/summary${params}`);
+export const getForecastSummary = async (month = '', account_id) => {
+  const params = new URLSearchParams();
+  if (month) params.set('month', month);
+  if (account_id !== undefined) params.set('account_id', account_id);
+  const qs = params.toString();
+  const response = await api.get(`/forecast/summary${qs ? '?' + qs : ''}`);
   return response.data;
 };
 
-export const getForecastAlerts = async (month = '') => {
-  const params = month ? `?month=${month}` : '';
-  const response = await api.get(`/forecast/alerts${params}`);
+export const getForecastAlerts = async (month = '', account_id) => {
+  const params = new URLSearchParams();
+  if (month) params.set('month', month);
+  if (account_id !== undefined) params.set('account_id', account_id);
+  const qs = params.toString();
+  const response = await api.get(`/forecast/alerts${qs ? '?' + qs : ''}`);
   return response.data;
 };
 
-export const getCategoryForecast = async (category, month = '') => {
-  const params = month ? `?month=${month}` : '';
-  const response = await api.get(`/forecast/category/${encodeURIComponent(category)}${params}`);
+export const getCategoryForecast = async (category, month = '', account_id) => {
+  const params = new URLSearchParams();
+  if (month) params.set('month', month);
+  if (account_id !== undefined) params.set('account_id', account_id);
+  const qs = params.toString();
+  const response = await api.get(`/forecast/category/${encodeURIComponent(category)}${qs ? '?' + qs : ''}`);
   return response.data;
 };
 
-export const getImprovedForecast = async (month = '', category = '') => {
+export const getImprovedForecast = async (month = '', category = '', account_id) => {
   const params = new URLSearchParams();
   if (month) params.set('month', month);
   if (category) params.set('category', category);
+  if (account_id !== undefined) params.set('account_id', account_id);
   const qs = params.toString();
   const response = await api.get(`/forecast/improved${qs ? '?' + qs : ''}`);
   return response.data;
 };
 
 // Health Score
-export const getHealthScore = async () => {
-  const response = await api.get('/health');
+export const getHealthScore = async (account_id) => {
+  const params = new URLSearchParams();
+  if (account_id !== undefined) params.set('account_id', account_id);
+  const qs = params.toString();
+  const response = await api.get(`/health${qs ? '?' + qs : ''}`);
   return response.data;
 };
 

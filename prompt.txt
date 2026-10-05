@@ -1,59 +1,63 @@
-Continue Phase 4D — frontend only.
+Continue Phase 4E — frontend only.
 
-Wire the existing Forecast UI to the Dashboard account selector.
+Wire the existing Financial Health UI to the Dashboard account selector.
 
 Requirements:
 
 * All Accounts:
 
-  * omit account_id
-  * preserve existing forecast behavior
+  * omit account_id completely
+  * preserve existing health score behavior
 
 * Specific account:
 
-  * pass account_id to supported forecast endpoints
-  * refresh forecast when account changes
+  * pass account_id to GET /api/health
+  * refresh health when account selection changes
 
-Wire all existing forecast views:
+Display backend values directly:
 
-* summary
-* improved forecast
-* alerts
-* category forecast
+* health score
+* income
+* expenses
+* savings rate
+* income stability
+* spending consistency
+* budget adherence
+* existing health description/recommendations
 
-Do NOT calculate forecast values in React.
-Do NOT change forecast formulas.
+Do NOT calculate health metrics or score in React.
+Do NOT change the scoring formula.
 Do NOT modify backend logic.
-Do NOT add ML/seasonality.
-Do NOT modify velocity, goals, notifications, or financial health.
+Do NOT modify velocity, forecast, goals, notifications, or analytics.
 
 Handle:
 
 * loading
-* API errors
-* insufficient data
-* empty state
+* API error
+* empty/insufficient data
 * account switching
+* All Accounts
 
 Tests:
 
 * All Accounts → no account_id
 * selected account → account_id
 * account switching refresh
-* summary
-* improved forecast
-* alerts
-* category forecast
-* error/loading states
+* score rendering
+* metric rendering
+* loading
+* error
+* insufficient data
+* existing health UI behavior
 
 Run full backend + frontend tests and npm build.
 
 STOP and report:
 
 1. files changed
-2. forecast views wired
+2. account wiring
 3. All Accounts behavior
-4. account switching
+4. metrics displayed
 5. tests added
 6. backend/frontend/total tests
 7. limitations
