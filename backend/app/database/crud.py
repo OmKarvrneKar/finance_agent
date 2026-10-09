@@ -53,8 +53,11 @@ def get_transactions_paginated(
     end_date: str = None,
     amount_min: Decimal = None,
     amount_max: Decimal = None,
+    account_id: int = None,
 ) -> Tuple[List[Transaction], int]:
     query = db.query(Transaction).filter(Transaction.user_id == user_id)
+    if account_id is not None:
+        query = query.filter(Transaction.account_id == account_id)
     if category:
         query = query.filter(Transaction.category == category)
     if transaction_type:

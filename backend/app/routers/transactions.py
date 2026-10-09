@@ -1,24 +1,30 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from decimal import Decimal
 import csv
 import io
 import logging
 
-from app.database.db import get_db, User
+from app.database.db import get_db, User, Transaction
 from app.database import crud
 from app.services.csv_parser import parse_bank_csv
 from app.services.categorizer import categorize_transactions
 from app.services import notification_producers
-from app.models.schemas import UploadSummaryResponse, PaginatedTransactionsResponse, SubscriptionResponse, TransactionUpdate
+from app.models.schemas import UploadSummaryResponse, PaginatedTransactionsResponse, SubscriptionResponse, TransactionUpdate, TransactionCreate, TransactionResponse
 from app.auth import get_current_user
 from app.dependencies import upload_rate_limit
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+def _validate_account(db: Session, account_id: Optional[int], user_id: int) -> None:
+    if account_id is not None:
+        account = crud.get_account(db, account_id, user_id)
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found.")
 
 @router.post("/upload-statement", response_model=UploadSummaryResponse,
              dependencies=[Depends(upload_rate_limit)])
@@ -134,6 +140,37 @@ async def upload_statement(
 
     return response
 
+@router.post("/transactions", response_model=TransactionResponse,
+             status_code=status.HTTP_201_CREATED)
+def create_transaction_endpoint(
+    tx_in: TransactionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _validate_account(db, tx_in.account_id, current_user.id)
+
+    tx = Transaction(
+        user_id=current_user.id,
+        date=tx_in.date,
+        description=tx_in.description,
+        amount=tx_in.amount,
+        transaction_type=tx_in.transaction_type,
+        category=tx_in.category,
+        subcategory=tx_in.subcategory,
+        is_recurring=tx_in.is_recurring,
+        is_user_confirmed_recurring=tx_in.is_user_confirmed_recurring,
+        raw_text=tx_in.raw_text,
+        account_id=tx_in.account_id,
+        source="manual",
+    )
+    db.add(tx)
+    db.commit()
+    db.refresh(tx)
+
+    notification_producers.sync_after_transaction_change(db, current_user.id)
+
+    return tx
+
 @router.get("/transactions/export")
 def export_transactions(
     start_date: str = Query(None, description="Start date YYYY-MM-DD"),
@@ -141,10 +178,14 @@ def export_transactions(
     category: str = Query(None, description="Filter by category"),
     transaction_type: str = Query(None, description="Filter by transaction type"),
     search: str = Query(None, description="Search in description"),
+    account_id: int = Query(None, description="Filter by account"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    _validate_account(db, account_id, current_user.id)
     query = db.query(crud.Transaction).filter(crud.Transaction.user_id == current_user.id)
+    if account_id is not None:
+        query = query.filter(crud.Transaction.account_id == account_id)
     if category:
         query = query.filter(crud.Transaction.category == category)
     if transaction_type:
@@ -200,9 +241,11 @@ def get_transactions(
     end_date: str = Query(None, description="Filter to date (YYYY-MM-DD)"),
     amount_min: Decimal = Query(None, description="Minimum amount"),
     amount_max: Decimal = Query(None, description="Maximum amount"),
+    account_id: int = Query(None, description="Filter by account"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    _validate_account(db, account_id, current_user.id)
     skip = (page - 1) * limit
     try:
         transactions, total = crud.get_transactions_paginated(
@@ -210,6 +253,7 @@ def get_transactions(
             category=category, transaction_type=transaction_type,
             search=search, start_date=start_date, end_date=end_date,
             amount_min=amount_min, amount_max=amount_max,
+            account_id=account_id,
         )
     except Exception as e:
         logger.error(f"Database query error: {str(e)}")

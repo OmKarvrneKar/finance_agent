@@ -61,7 +61,7 @@ export const getTransactions = async (page = 1, limit = 10, category = '', type 
   return response.data;
 };
 
-export const searchTransactions = async ({ page = 1, limit = 10, q = '', category = '', date_from = '', date_to = '', amount_min = '', amount_max = '', transaction_type = '' } = {}) => {
+export const searchTransactions = async ({ page = 1, limit = 10, q = '', category = '', date_from = '', date_to = '', amount_min = '', amount_max = '', transaction_type = '', account_id = '' } = {}) => {
   const params = new URLSearchParams({ page, limit });
   if (q) params.append('q', q);
   if (category) params.append('category', category);
@@ -70,17 +70,19 @@ export const searchTransactions = async ({ page = 1, limit = 10, q = '', categor
   if (amount_min) params.append('amount_min', amount_min);
   if (amount_max) params.append('amount_max', amount_max);
   if (transaction_type) params.append('transaction_type', transaction_type);
+  if (account_id) params.append('account_id', account_id);
   const response = await api.get(`/transactions?${params.toString()}`);
   return response.data;
 };
 
-export const getTransactionsExport = async ({ start_date = '', end_date = '', category = '', transaction_type = '', search = '' } = {}) => {
+export const getTransactionsExport = async ({ start_date = '', end_date = '', category = '', transaction_type = '', search = '', account_id = '' } = {}) => {
   const params = new URLSearchParams();
   if (start_date) params.append('start_date', start_date);
   if (end_date) params.append('end_date', end_date);
   if (category) params.append('category', category);
   if (transaction_type) params.append('transaction_type', transaction_type);
   if (search) params.append('search', search);
+  if (account_id) params.append('account_id', account_id);
   const qs = params.toString();
   const response = await api.get(`/transactions/export${qs ? '?' + qs : ''}`, { responseType: 'blob' });
   return response;
@@ -93,6 +95,11 @@ export const getTransaction = async (id) => {
 
 export const updateTransaction = async (id, data) => {
   const response = await api.put(`/transactions/${id}`, data);
+  return response.data;
+};
+
+export const createTransaction = async (payload) => {
+  const response = await api.post('/transactions', payload);
   return response.data;
 };
 

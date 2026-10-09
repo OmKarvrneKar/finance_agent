@@ -238,7 +238,28 @@ class TransactionUpdate(BaseModel):
         return v
 
 class TransactionCreate(TransactionBase):
-    pass
+    model_config = {"extra": "forbid"}
+
+    @field_validator("transaction_type")
+    @classmethod
+    def validate_transaction_type(cls, v: str) -> str:
+        if v not in ("debit", "credit"):
+            raise ValueError("transaction_type must be 'debit' or 'credit'")
+        return v
+
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v: Decimal) -> Decimal:
+        if not v.is_finite() or v <= 0:
+            raise ValueError("amount must be positive")
+        return v
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Category cannot be empty")
+        return v.strip()
 
 class TransactionResponse(TransactionBase):
     id: int

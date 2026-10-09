@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { searchTransactions, deleteTransaction, getTransactionsExport } from '../utils/api';
+import { searchTransactions, deleteTransaction, getTransactionsExport, getAccounts } from '../utils/api';
 import TransactionRow from '../components/TransactionRow';
 import EditTransactionModal from '../components/EditTransactionModal';
 import SplitTransactionModal from '../components/SplitTransactionModal';
-import { Filter, ChevronLeft, ChevronRight, RefreshCw, Search, Trash2, Download } from 'lucide-react';
+import ManualTransactionModal from '../components/ManualTransactionModal';
+import { Filter, ChevronLeft, ChevronRight, RefreshCw, Search, Trash2, Download, Plus } from 'lucide-react';
 
 const CATEGORIES = [
   '', 'Food & Dining', 'Groceries', 'Shopping', 'Transport',
@@ -24,8 +25,11 @@ const Transactions = () => {
   const [dateTo, setDateTo] = useState('');
   const [amountMin, setAmountMin] = useState('');
   const [amountMax, setAmountMax] = useState('');
+  const [selectedAccount, setSelectedAccount] = useState('');
+  const [accounts, setAccounts] = useState([]);
   const [editingTx, setEditingTx] = useState(null);
   const [splittingTx, setSplittingTx] = useState(null);
+  const [addingTx, setAddingTx] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
@@ -39,6 +43,7 @@ const Transactions = () => {
         page, limit, q: searchQuery, category,
         transaction_type: type, date_from: dateFrom, date_to: dateTo,
         amount_min: amountMin, amount_max: amountMax,
+        account_id: selectedAccount,
       });
       setTransactions(data.transactions || []);
       setTotal(data.total || 0);
@@ -48,9 +53,17 @@ const Transactions = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, category, type, dateFrom, dateTo, amountMin, amountMax]);
+  }, [page, searchQuery, category, type, dateFrom, dateTo, amountMin, amountMax, selectedAccount]);
 
   useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAccounts({ is_active: true })
+      .then((data) => { if (!cancelled) setAccounts(Array.isArray(data) ? data : []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this transaction?')) return;
@@ -77,6 +90,7 @@ const Transactions = () => {
         category,
         transaction_type: type,
         search: searchQuery,
+        account_id: selectedAccount,
       });
       const blob = new Blob([response.data], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
@@ -108,6 +122,9 @@ const Transactions = () => {
           <h1 className="page-title">Transactions</h1>
           <p className="page-description">View, search, and manage all your categorized transactions.</p>
         </div>
+        <button onClick={() => setAddingTx(true)} className="btn-primary" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Plus size={16} /> Add Transaction
+        </button>
         <button onClick={fetchTransactions} className="btn-secondary" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <RefreshCw size={16} /> Refresh
         </button>
@@ -162,6 +179,18 @@ const Transactions = () => {
               ))}
             </select>
 
+            <select
+              value={selectedAccount}
+              onChange={(e) => { setSelectedAccount(e.target.value); setPage(1); }}
+              aria-label="Filter by account"
+              style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', outline: 'none', fontSize: '0.875rem' }}
+            >
+              <option value="">All Accounts</option>
+              {accounts.map(a => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+
             <div style={{ display: 'flex', backgroundColor: 'var(--bg-color)', borderRadius: '6px', padding: '3px', border: '1px solid var(--border-color)' }}>
               {['', 'debit', 'credit'].map(t => (
                 <button key={t} onClick={() => { setType(t); setPage(1); }}
@@ -187,8 +216,8 @@ const Transactions = () => {
               placeholder="Max ₹" min="0" step="0.01"
               style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.875rem', width: '100px' }} />
 
-            {(searchQuery || category || type || dateFrom || dateTo || amountMin || amountMax) && (
-              <button onClick={() => { setSearchQuery(''); setCategory(''); setType(''); setDateFrom(''); setDateTo(''); setAmountMin(''); setAmountMax(''); setPage(1); }}
+            {(searchQuery || category || type || dateFrom || dateTo || amountMin || amountMax || selectedAccount) && (
+              <button onClick={() => { setSearchQuery(''); setCategory(''); setType(''); setDateFrom(''); setDateTo(''); setAmountMin(''); setAmountMax(''); setSelectedAccount(''); setPage(1); }}
                 style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', fontSize: '0.8rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 Clear all
               </button>
@@ -215,7 +244,7 @@ const Transactions = () => {
                 <tr><td colSpan="6" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading transactions...</td></tr>
               ) : transactions.length === 0 ? (
                 <tr><td colSpan="6" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  {searchQuery || category || type || dateFrom || dateTo || amountMin || amountMax
+                  {searchQuery || category || type || dateFrom || dateTo || amountMin || amountMax || selectedAccount
                     ? 'No transactions found matching your filters.' : 'No transactions yet. Upload a bank statement to get started.'}
                 </td></tr>
               ) : (
@@ -254,6 +283,7 @@ const Transactions = () => {
 
       {editingTx && <EditTransactionModal transaction={editingTx} onClose={() => setEditingTx(null)} onSaved={() => { setEditingTx(null); fetchTransactions(); }} />}
       {splittingTx && <SplitTransactionModal transaction={splittingTx} onClose={() => setSplittingTx(null)} onSaved={() => { setSplittingTx(null); fetchTransactions(); }} />}
+      {addingTx && <ManualTransactionModal onClose={() => setAddingTx(false)} onCreated={fetchTransactions} />}
     </div>
   );
 };

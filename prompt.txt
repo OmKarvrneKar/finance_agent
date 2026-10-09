@@ -1,58 +1,60 @@
-Start Phase 5B — Manual Transaction Creation.
+Start Phase 5C — Transactions Page Account Scoping.
 
-FIRST STEP ONLY: backend.
+FIRST STEP ONLY: backend + frontend for Transactions.
 
-Inspect the existing Transaction model, transaction CRUD/service, category handling, account handling, split handling, and validation.
+Goal:
+Allow the Transactions page to optionally filter by account.
 
-Add:
-POST /api/transactions
+Backend:
+- Inspect existing GET /api/transactions.
+- Add optional account_id if not already supported.
+- account_id omitted → existing behavior unchanged.
+- account_id provided → only that user's transactions for that account.
+- foreign/nonexistent account → 404.
+- NULL-account transactions excluded when a specific account is selected.
+- Preserve pagination, search, category filters, date filters, sorting, and export behavior.
+- Do NOT change transaction creation/edit/delete.
+- Do NOT change CSV/OCR ingestion.
+- Reuse existing account validation/query helpers.
 
-Requirements:
-- authenticated user only
-- transaction belongs to the authenticated user
-- optional account_id
-- if account_id is provided, it must belong to the user
-- support income/credit and expense/debit using the existing transaction representation
-- amount must use existing Decimal/money handling
-- date must use existing date handling
-- category must use existing category validation
-- merchant/description fields should reuse existing schema conventions
-- preserve existing split-transaction model; do NOT create a second split system
-- prevent invalid amounts/types
-- do not allow another user's account_id
-- do not change existing CSV/OCR ingestion
-
-After successful creation:
-- use the existing notification sync hook where appropriate
-- do not duplicate notification logic
+Frontend:
+- Add/use the existing account selector on Transactions page.
+- All Accounts → omit account_id.
+- Specific account → pass account_id.
+- Changing account refreshes transaction list.
+- Keep existing search/filter/pagination behavior.
+- Clearly show selected account.
 
 Tests:
-- authenticated creation
-- expense
-- income
-- account ownership
-- foreign account rejection
-- invalid amount
-- invalid transaction type
-- category validation
-- Decimal precision
-- date handling
-- notification integration
-- existing transaction regression tests
+- existing behavior without account_id
+- account filtering
+- foreign account
+- nonexistent account
+- NULL-account exclusion
+- search + account filter
+- category + account filter
+- date + account filter
+- pagination + account filter
+- export + account filter if export supports filters
+- account switching
+- All Accounts
+- loading/error/empty states
 
-Do NOT build frontend yet.
-Do NOT add recurring transactions.
-Do NOT add editing/deleting in this step.
-Do NOT change analytics formulas.
+IMPORTANT:
+- Do NOT calculate financial values in React.
+- Do NOT change transaction data.
+- Do NOT add new transaction models.
+- Do NOT modify analytics formulas.
+- Do NOT modify notifications.
+- Reuse existing account/security helpers.
 
-Run backend tests and npm build.
+Run full backend + frontend tests and npm build.
 
 STOP and report:
-1. endpoint
-2. request/response schema
-3. validation
-4. account ownership
-5. notification integration
-6. tests added
-7. backend/frontend/total tests
-8. limitations
+1. endpoints changed
+2. account filtering behavior
+3. filter combinations tested
+4. frontend integration
+5. tests added
+6. backend/frontend/total tests
+7. limitations

@@ -10,6 +10,8 @@ vi.mock('../utils/api', () => ({
   searchTransactions: vi.fn(),
   deleteTransaction: vi.fn(),
   getTransactionsExport: vi.fn(),
+  getAccounts: vi.fn().mockResolvedValue([]),
+  createTransaction: vi.fn(),
 }));
 
 import { searchTransactions, deleteTransaction, getTransactionsExport, getMe } from '../utils/api';

@@ -13,6 +13,9 @@ vi.mock('../utils/api', () => ({
   markRecurring: vi.fn(),
   unmarkRecurring: vi.fn(),
   getCategories: vi.fn().mockResolvedValue([]),
+  getAccounts: vi.fn().mockResolvedValue([]),
+  getTransactionsExport: vi.fn(),
+  createTransaction: vi.fn(),
 }));
 
 import { searchTransactions, deleteTransaction, markRecurring, unmarkRecurring, getMe } from '../utils/api';
