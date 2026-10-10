@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from decimal import Decimal
+from app.database import crud
 from app.database.db import get_db, BudgetGoal, SavingsGoal, User
 from app.models import schemas
 from app.services import budgets
@@ -10,6 +11,13 @@ from app.services import notification_producers
 from app.auth import get_current_user
 
 router = APIRouter()
+
+
+def _validate_account(db: Session, account_id: Optional[int], user_id: int) -> None:
+    if account_id is not None:
+        account = crud.get_account(db, account_id, user_id)
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found.")
 
 @router.post("/budgets", response_model=schemas.BudgetGoalResponse)
 def create_or_update_budget(
@@ -42,10 +50,19 @@ def create_or_update_budget(
 @router.get("/budgets", response_model=List[schemas.BudgetStatusResponse])
 def get_budgets(
     month: str = Query(None, description="YYYY-MM"),
+    account_id: Optional[int] = Query(
+        None,
+        description=(
+            "Filter budget spending to a single account. Budget caps stay "
+            "user-level; only the current-spend calculation is scoped to this "
+            "account (NULL-account transactions excluded). Omit for all accounts."
+        ),
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return budgets.get_budget_status(db, current_user.id, month)
+    _validate_account(db, account_id, current_user.id)
+    return budgets.get_budget_status(db, current_user.id, month, account_id=account_id)
 
 @router.delete("/budgets/{category}")
 def delete_budget(

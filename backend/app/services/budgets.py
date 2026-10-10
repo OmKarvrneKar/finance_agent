@@ -7,7 +7,19 @@ from app.database.db import BudgetGoal, SavingsGoal, Transaction
 from typing import List, Dict, Any, Optional
 from app.services.forecasting import get_historical_average
 
-def get_budget_status(db: Session, user_id: int, month: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_budget_status(
+    db: Session,
+    user_id: int,
+    month: Optional[str] = None,
+    account_id: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    """Compute budget status for a user.
+
+    Budget caps and goal definitions stay user-level. When ``account_id`` is
+    given, only the current-spend calculation is filtered to that account's
+    transactions (NULL-account rows excluded); thresholds and formulas are
+    unchanged. Omitting ``account_id`` preserves the all-account behavior.
+    """
     if not month:
         month = datetime.today().strftime("%Y-%m")
         
@@ -36,13 +48,16 @@ def get_budget_status(db: Session, user_id: int, month: Optional[str] = None) ->
     status_list = []
     
     for b in budgets:
-        current_spend = db.query(func.sum(Transaction.amount)).filter(
+        spend_query = db.query(func.sum(Transaction.amount)).filter(
             Transaction.user_id == user_id,
             func.lower(Transaction.category) == b.category.lower(),
             Transaction.transaction_type == 'debit',
             Transaction.date >= start_date,
             Transaction.date <= end_date
-        ).scalar() or Decimal('0.00')
+        )
+        if account_id is not None:
+            spend_query = spend_query.filter(Transaction.account_id == account_id)
+        current_spend = spend_query.scalar() or Decimal('0.00')
         
         percent_used = (current_spend / b.monthly_cap) * 100 if b.monthly_cap > 0 else Decimal('100.0')
         

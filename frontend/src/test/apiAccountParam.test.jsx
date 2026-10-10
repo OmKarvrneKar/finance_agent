@@ -12,7 +12,7 @@ vi.mock('axios', () => {
 });
 
 import axios from 'axios';
-import { searchTransactions, getTransactionsExport, fetchSubscriptions, getRecurringCalendar, getSavingsRecommendations } from '../utils/api';
+import { searchTransactions, getTransactionsExport, fetchSubscriptions, getRecurringCalendar, getSavingsRecommendations, getBudgets } from '../utils/api';
 
 const api = axios.create();
 
@@ -172,5 +172,25 @@ describe('account_id on savings recommendations', () => {
   it('getSavingsRecommendations includes account_id when an account is selected', async () => {
     await getSavingsRecommendations(7);
     expect(lastUrl()).toBe('/savings-recommendations?account_id=7');
+  });
+});
+
+describe('account_id on budgets', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    api.get.mockResolvedValue({ data: [] });
+  });
+
+  it('getBudgets omits account_id for All Accounts', async () => {
+    await getBudgets();
+    expect(lastUrl()).toBe('/budgets');
+  });
+
+  it('getBudgets includes account_id and month when scoped', async () => {
+    await getBudgets('2026-09', 4);
+    const url = lastUrl();
+    expect(url).toContain('/budgets?');
+    expect(url).toContain('month=2026-09');
+    expect(url).toContain('account_id=4');
   });
 });

@@ -1,13 +1,18 @@
-**Phase 5D-4 — Account-Scoped Savings Recommendations**
+**Phase 5D-6 — Account Assignment for Statement Uploads and Receipt Confirmation**
 
-Add optional account_id filtering to GET /savings-recommendations.
+Audit and implement account assignment for transaction ingestion.
+
+Scope:
+- `POST /upload-statement`
+- Receipt confirmation endpoint (`POST /receipts/{id}/confirm`)
 
 Requirements:
-1. Validate account_id using the existing user-scoped account validation pattern; foreign/nonexistent accounts return 404.
-2. Apply the account filter to both monthly spending and merchant-level queries used to generate recommendations. Ensure all transaction-derived inputs use the same account scope.
-3. When account_id is omitted, preserve existing all-account behavior and recommendation output.
-4. Pass the selected Dashboard account into the savings-recommendations component and refetch when the selection changes.
-5. Add backend and frontend regression tests for account A, account B, NULL-account exclusion, unfiltered behavior, invalid/foreign accounts, and switching between accounts.
-6. Do not change recommendation algorithms, thresholds, or explanation logic.
+1. Allow an optional account_id where appropriate, validate ownership using the existing user-scoped account validation pattern, and return 404 for foreign/nonexistent accounts.
+2. Ensure imported or receipt-confirmed transactions receive the selected account_id.
+3. Preserve existing behavior when account_id is omitted: transactions remain unassigned unless the existing flow already assigns an account.
+4. Do not infer an account from institution names, filenames, OCR text, or other unverified signals.
+5. Preserve transaction ownership, duplicate handling, receipt confirmation semantics, and notification behavior.
+6. Add backend regression tests for assigned/unassigned ingestion, account isolation, invalid/foreign account IDs, and existing ingestion behavior.
+7. Do not change account-scoping logic in unrelated endpoints or introduce bulk reassignment.
 
-Run the full backend/frontend test suites and production build. Report exact totals and changed files. Stop after this phase.
+Run full backend/frontend tests and the production build. Report exact totals and changed files. Stop after this phase.

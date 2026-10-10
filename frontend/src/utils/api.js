@@ -167,9 +167,12 @@ export const getHealthScore = async (account_id) => {
 };
 
 // Budgets
-export const getBudgets = async (month = '') => {
-  const params = month ? `?month=${month}` : '';
-  const response = await api.get(`/budgets${params}`);
+export const getBudgets = async (month = '', account_id) => {
+  const params = new URLSearchParams();
+  if (month) params.append('month', month);
+  if (account_id) params.append('account_id', account_id);
+  const qs = params.toString();
+  const response = await api.get(`/budgets${qs ? '?' + qs : ''}`);
   return response.data;
 };
 
