@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
+from app.database import crud
 from app.database.db import User, get_db
 from app.models.schemas import RecurringCalendarResponse
 from app.services.recurring_calendar import (
@@ -14,6 +15,13 @@ from app.services.recurring_calendar import (
 )
 
 router = APIRouter()
+
+
+def _validate_account(db: Session, account_id: Optional[int], user_id: int) -> None:
+    if account_id is not None:
+        account = crud.get_account(db, account_id, user_id)
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found.")
 
 
 @router.get("/recurring/calendar", response_model=RecurringCalendarResponse)
@@ -28,9 +36,18 @@ def get_recurring_calendar(
             f"(default: today + {DEFAULT_WINDOW_DAYS} days)"
         ),
     ),
+    account_id: Optional[int] = Query(
+        None,
+        description=(
+            "Filter recurring bills to a single account. Historical "
+            "transactions used to derive bills are scoped to this account; "
+            "NULL-account transactions are excluded. Omit for all accounts."
+        ),
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    _validate_account(db, account_id, current_user.id)
     parsed_start = _parse_date(start_date) if start_date else date.today()
     parsed_end = (
         _parse_date(end_date)
@@ -54,4 +71,6 @@ def get_recurring_calendar(
             detail="start_date must be on or before end_date.",
         )
 
-    return get_upcoming_bills(db, current_user.id, parsed_start, parsed_end)
+    return get_upcoming_bills(
+        db, current_user.id, parsed_start, parsed_end, account_id=account_id
+    )

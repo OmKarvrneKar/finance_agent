@@ -312,17 +312,31 @@ def get_categories(
 
 @router.get("/subscriptions", response_model=List[SubscriptionResponse])
 def get_subscriptions(
+    account_id: Optional[int] = Query(
+        None,
+        description=(
+            "Filter subscriptions to a single account. Historical recurring "
+            "transactions used to derive each subscription (occurrences, "
+            "averages, frequency, last seen) are scoped to this account; "
+            "NULL-account transactions are excluded. Omit for all accounts."
+        ),
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     from app.database.db import Transaction
     import datetime
 
+    _validate_account(db, account_id, current_user.id)
+
     recurring_txs = db.query(Transaction).filter(
         Transaction.user_id == current_user.id,
         Transaction.is_recurring == True,
         Transaction.transaction_type == 'debit'
-    ).all()
+    )
+    if account_id is not None:
+        recurring_txs = recurring_txs.filter(Transaction.account_id == account_id)
+    recurring_txs = recurring_txs.all()
 
     grouped = {}
     for tx in recurring_txs:

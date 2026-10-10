@@ -216,8 +216,11 @@ class TestAccountAwareHealth:
         # Spending consistency from A's expenses only: perfect consistency.
         assert _rate(filtered, "spending_consistency") == Decimal("100.00")
         assert _rate(unfiltered, "spending_consistency") < Decimal("100.00")
-        # Budget adherence compares A's spend against the cap, not B's.
-        assert _rate(filtered, "budget_adherence") == Decimal("100")
+        # Budget caps and spending are user-level: adherence is computed from
+        # ALL of the user's accounts (5000 + 50000 = 55000 > 6000), so the
+        # scoped view matches the unfiltered view instead of seeing only A's
+        # 5000 spend (Phase 5D-2 mixed-scope behavior).
+        assert _rate(filtered, "budget_adherence") == Decimal("0")
         assert _rate(unfiltered, "budget_adherence") == Decimal("0")
         # Income identical across accounts -> stability unaffected by filtering.
         assert _rate(filtered, "income_stability") == Decimal("100.00")

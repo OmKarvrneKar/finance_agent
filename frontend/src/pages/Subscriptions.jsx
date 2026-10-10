@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { fetchSubscriptions } from '../utils/api';
+import { useState, useEffect } from 'react';
+import { fetchSubscriptions, getAccounts } from '../utils/api';
 import CategoryBadge from '../components/CategoryBadge';
 import { Repeat, Calendar, DollarSign, Activity, CheckCircle, Bot } from 'lucide-react';
 import SummaryCard from '../components/SummaryCard';
@@ -7,11 +7,22 @@ import SummaryCard from '../components/SummaryCard';
 const Subscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAccount, setSelectedAccount] = useState('');
+  const [accounts, setAccounts] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAccounts({ is_active: true })
+      .then((data) => { if (!cancelled) setAccounts(Array.isArray(data) ? data : []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const loadSubscriptions = async () => {
+      setLoading(true);
       try {
-        const data = await fetchSubscriptions();
+        const data = await fetchSubscriptions(selectedAccount || undefined);
         setSubscriptions(data || []);
       } catch (err) {
         console.error('Failed to load subscriptions', err);
@@ -20,7 +31,7 @@ const Subscriptions = () => {
       }
     };
     loadSubscriptions();
-  }, []);
+  }, [selectedAccount]);
 
   const totalMonthlyCost = subscriptions.reduce((sum, sub) => sum + (sub.estimated_monthly_cost || 0), 0);
   const totalAnnualCost = subscriptions.reduce((sum, sub) => sum + (sub.estimated_annual_cost || 0), 0);
@@ -32,6 +43,20 @@ const Subscriptions = () => {
           <Repeat size={28} /> Subscriptions & Recurring
         </h1>
         <p className="page-description">Automatically detected recurring expenses and their estimated costs.</p>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+        <select
+          value={selectedAccount}
+          onChange={(e) => setSelectedAccount(e.target.value)}
+          aria-label="Filter by account"
+          style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', outline: 'none', fontSize: '0.875rem' }}
+        >
+          <option value="">All Accounts</option>
+          {accounts.map(a => (
+            <option key={a.id} value={a.id}>{a.name}</option>
+          ))}
+        </select>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px', marginBottom: '32px' }}>

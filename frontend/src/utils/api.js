@@ -301,8 +301,11 @@ export const confirmAnomaly = async (id) => {
 };
 
 // Subscriptions / Recurring
-export const fetchSubscriptions = async () => {
-  const response = await api.get('/subscriptions');
+export const fetchSubscriptions = async (account_id) => {
+  const params = new URLSearchParams();
+  if (account_id) params.append('account_id', account_id);
+  const qs = params.toString();
+  const response = await api.get(`/subscriptions${qs ? '?' + qs : ''}`);
   return response.data;
 };
 
@@ -402,10 +405,11 @@ export const getGoalProgress = async () => {
 };
 
 // Recurring Bills Calendar
-export const getRecurringCalendar = async ({ start_date = '', end_date = '' } = {}) => {
+export const getRecurringCalendar = async ({ start_date = '', end_date = '', account_id = '' } = {}) => {
   const params = new URLSearchParams();
   if (start_date) params.append('start_date', start_date);
   if (end_date) params.append('end_date', end_date);
+  if (account_id) params.append('account_id', account_id);
   const qs = params.toString();
   const response = await api.get(`/recurring/calendar${qs ? '?' + qs : ''}`);
   return response.data;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { getHealthScore } from '../utils/api';
 import { AlertCircle, TrendingUp, Wallet, BarChart3, DollarSign } from 'lucide-react';
 
@@ -50,7 +50,7 @@ const HealthScoreCard = ({ accountId }) => {
         const result = await getHealthScore(accountId);
         setData(result);
         setError(null);
-      } catch (err) {
+      } catch {
         setError('Failed to load health score');
       } finally {
         setLoading(false);
@@ -106,6 +106,25 @@ const HealthScoreCard = ({ accountId }) => {
         Financial Health Score
       </h3>
 
+      {/* Mixed-scope note: only meaningful once an account is selected */}
+      {accountId != null && accountId !== '' && (
+        <div
+          data-testid="health-scope-note"
+          style={{
+            fontSize: '0.78rem',
+            color: 'var(--text-muted)',
+            backgroundColor: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '8px 10px',
+            margin: '0 0 16px',
+            lineHeight: 1.4,
+          }}
+        >
+          Scoped to this account: savings rate, income stability, and spending consistency use this
+          account only. Budget adherence is a user-wide measure across all of your accounts.
+        </div>
+      )}
       {/* Score display */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '24px' }}>
         <div style={{

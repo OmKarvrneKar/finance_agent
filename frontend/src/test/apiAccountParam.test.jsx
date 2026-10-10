@@ -12,7 +12,7 @@ vi.mock('axios', () => {
 });
 
 import axios from 'axios';
-import { searchTransactions, getTransactionsExport } from '../utils/api';
+import { searchTransactions, getTransactionsExport, fetchSubscriptions, getRecurringCalendar } from '../utils/api';
 
 const api = axios.create();
 
@@ -119,5 +119,41 @@ describe('search and date-range query parameter construction', () => {
     expect(url).toContain('start_date=2026-07-01');
     expect(url).toContain('end_date=2026-07-31');
     expect(url).toContain('search=coffee');
+  });
+});
+
+describe('account_id on subscriptions and recurring calendar', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    api.get.mockResolvedValue({ data: [] });
+  });
+
+  it('fetchSubscriptions omits account_id for All Accounts', async () => {
+    await fetchSubscriptions();
+    expect(lastUrl()).toBe('/subscriptions');
+  });
+
+  it('fetchSubscriptions includes account_id when an account is selected', async () => {
+    await fetchSubscriptions('7');
+    expect(lastUrl()).toBe('/subscriptions?account_id=7');
+  });
+
+  it('getRecurringCalendar omits account_id when no account is selected', async () => {
+    api.get.mockResolvedValue({ data: { bills: [] } });
+    await getRecurringCalendar({ start_date: '2026-09-15', end_date: '2026-10-15' });
+    const url = lastUrl();
+    expect(url).toContain('/recurring/calendar?');
+    expect(url).toContain('start_date=2026-09-15');
+    expect(url).toContain('end_date=2026-10-15');
+    expect(url).not.toContain('account_id');
+  });
+
+  it('getRecurringCalendar combines account_id with the date range', async () => {
+    api.get.mockResolvedValue({ data: { bills: [] } });
+    await getRecurringCalendar({ start_date: '2026-09-15', end_date: '2026-10-15', account_id: 4 });
+    const url = lastUrl();
+    expect(url).toContain('start_date=2026-09-15');
+    expect(url).toContain('end_date=2026-10-15');
+    expect(url).toContain('account_id=4');
   });
 });

@@ -45,7 +45,9 @@ vi.mock('../components/AnomalyAlerts', () => ({
   default: ({ accountId }) => <div data-testid="anomaly-alerts" data-account-id={accountId} />,
 }));
 vi.mock('../components/SavingsRecommendations', () => ({ default: () => <div data-testid="savings-recommendations" /> }));
-vi.mock('../components/RecurringBillsCalendar', () => ({ default: () => <div data-testid="recurring-bills-calendar" /> }));
+vi.mock('../components/RecurringBillsCalendar', () => ({
+  default: ({ accountId }) => <div data-testid="recurring-bills-calendar" data-account-id={accountId} />,
+}));
 vi.mock('../components/SpendingVelocityCard', () => ({
   default: ({ accountId }) => <div data-testid="spending-velocity-card" data-account-id={accountId} />,
 }));
@@ -320,6 +322,21 @@ describe('Dashboard account selector and summary', () => {
     fireEvent.click(screen.getByTestId('account-option-all'));
     await waitFor(() => {
       expect(screen.getByTestId('anomaly-alerts')).not.toHaveAttribute('data-account-id');
+    });
+  });
+
+  it('recurring bills calendar receives the selected account', async () => {
+    renderWithAuth(<Dashboard />);
+    await waitForSelector();
+    const calendar = await screen.findByTestId('recurring-bills-calendar');
+    expect(calendar).not.toHaveAttribute('data-account-id');
+    fireEvent.click(screen.getByTestId('account-option-1'));
+    await waitFor(() => {
+      expect(screen.getByTestId('recurring-bills-calendar')).toHaveAttribute('data-account-id', '1');
+    });
+    fireEvent.click(screen.getByTestId('account-option-all'));
+    await waitFor(() => {
+      expect(screen.getByTestId('recurring-bills-calendar')).not.toHaveAttribute('data-account-id');
     });
   });
 

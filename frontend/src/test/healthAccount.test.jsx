@@ -169,4 +169,19 @@ describe('Financial Health card and account selector', () => {
     expect(container.textContent).not.toContain('Insufficient data to calculate');
     expect(lastHealthCall()).toBe('/health');
   });
+
+  it('shows the mixed-scope note when an account is selected', async () => {
+    const { getByTestId, container } = render(<HealthScoreCard accountId={7} />);
+    await waitFor(() => expect(container.textContent).toContain('Financial Health Score'));
+    const note = getByTestId('health-scope-note');
+    expect(note.textContent).toContain('Scoped to this account');
+    expect(note.textContent).toContain('Budget adherence is a user-wide measure');
+    expect(note.textContent).toContain('all of your accounts');
+  });
+
+  it('omits the mixed-scope note for All Accounts', async () => {
+    const { queryByTestId, container } = render(<HealthScoreCard />);
+    await waitFor(() => expect(container.textContent).toContain('Financial Health Score'));
+    expect(queryByTestId('health-scope-note')).toBeNull();
+  });
 });

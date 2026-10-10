@@ -87,6 +87,7 @@ def get_upcoming_bills(
     user_id: int,
     start_date: date,
     end_date: date,
+    account_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Deterministic recurring-bills calendar for the authenticated user.
 
@@ -94,16 +95,21 @@ def get_upcoming_bills(
     Amounts are Decimal and taken from historical transactions (authoritative).
     Dates are only projected when >= 2 distinct historical dates support the
     frequency interval; otherwise expected_date is None with a clear status.
+    When ``account_id`` is given, every historical query is filtered to that
+    account (NULL-account transactions are excluded); omitting it preserves
+    the all-account behavior.
     """
-    recurring_txs = (
+    query = (
         db.query(Transaction)
         .filter(
             Transaction.user_id == user_id,
             Transaction.is_recurring == True,  # noqa: E712
             Transaction.transaction_type == "debit",
         )
-        .all()
     )
+    if account_id is not None:
+        query = query.filter(Transaction.account_id == account_id)
+    recurring_txs = query.all()
 
     grouped: Dict[str, List[Transaction]] = {}
     for tx in recurring_txs:

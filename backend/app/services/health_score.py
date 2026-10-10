@@ -81,7 +81,15 @@ def _score_savings_rate(rate: Optional[Decimal]) -> Optional[Decimal]:
     return _interpolate_linear(rate, Decimal("0"), Decimal("0"), Decimal("5"), Decimal("25"))
 
 
-def _calculate_budget_adherence(db: Session, user_id: int, monthly_data: List[Dict[str, Any]], account_id: Optional[int] = None) -> Optional[Decimal]:
+def _calculate_budget_adherence(db: Session, user_id: int, monthly_data: List[Dict[str, Any]]) -> Optional[Decimal]:
+    """Percentage of the user's budget caps on track for the latest month.
+
+    Mixed-scope behavior: budget caps are user-level, so spending is summed
+    from ALL of the user's transactions (every account, including
+    NULL-account rows) regardless of which account is selected for the other
+    health metrics. Budget adherence is therefore a user/household-wide
+    measure, not account-specific.
+    """
     budgets = db.query(BudgetGoal).filter(BudgetGoal.user_id == user_id).all()
     if not budgets:
         return None
@@ -97,8 +105,6 @@ def _calculate_budget_adherence(db: Session, user_id: int, monthly_data: List[Di
         extract("year", Transaction.date) == int(latest_month["month"][:4]),
         extract("month", Transaction.date) == int(latest_month["month"][5:7]),
     )
-    if account_id is not None:
-        tx_query = tx_query.filter(Transaction.account_id == account_id)
     txs = tx_query.all()
 
     for t in txs:
@@ -176,6 +182,13 @@ def _score_spending_consistency(consistency: Optional[Decimal]) -> Optional[Deci
 
 
 def calculate_health_score(db: Session, user_id: int, account_id: Optional[int] = None) -> Dict[str, Any]:
+    """Financial health score with optional account scoping (mixed scope).
+
+    Account-scoped when ``account_id`` is provided: income, expenses, savings
+    rate, income stability and spending consistency. Always user-level:
+    budget adherence (user-level spending vs user-level budget caps across
+    all accounts).
+    """
     monthly_data = _get_monthly_income_expense(db, user_id, num_months=6, account_id=account_id)
 
     has_income = any(m["income"] > 0 for m in monthly_data)
@@ -183,7 +196,7 @@ def calculate_health_score(db: Session, user_id: int, account_id: Optional[int] 
     has_enough_data = len(monthly_data) >= 2 and has_income and has_expense
 
     savings_rate = _calculate_savings_rate(monthly_data) if has_enough_data else None
-    budget_adherence = _calculate_budget_adherence(db, user_id, monthly_data, account_id=account_id) if has_enough_data else None
+    budget_adherence = _calculate_budget_adherence(db, user_id, monthly_data) if has_enough_data else None
     income_stability = _calculate_income_stability(monthly_data) if has_enough_data else None
     spending_consistency = _calculate_spending_consistency(monthly_data) if has_enough_data else None
 
@@ -245,7 +258,7 @@ def calculate_health_score(db: Session, user_id: int, account_id: Optional[int] 
             if raw is None:
                 return "No budgets set. Weight redistributed to other components."
             ew = effective_weights.get("budget_adherence", weights["budget_adherence"] * 100)
-            return f"Budget adherence: {raw}% of budgets on track. Weight: {ew}%."
+            return f"Budget adherence: {raw}% of budgets on track across all accounts (user-wide measure). Weight: {ew}%."
         if component == "income_stability":
             if raw is None:
                 return "Not enough income months to measure stability."

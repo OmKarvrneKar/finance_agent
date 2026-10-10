@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getRecurringCalendar } from '../utils/api';
 import CategoryBadge from './CategoryBadge';
 import {
@@ -71,7 +71,7 @@ const ConfirmedBadge = ({ confirmed }) => {
   );
 };
 
-const RecurringBillsCalendar = ({ startDate, endDate }) => {
+const RecurringBillsCalendar = ({ startDate, endDate, accountId }) => {
   const defaults = getDefaultUpcomingRange(30);
   const [rangeStart, setRangeStart] = useState(startDate || defaults.start);
   const [rangeEnd, setRangeEnd] = useState(endDate || defaults.end);
@@ -103,6 +103,7 @@ const RecurringBillsCalendar = ({ startDate, endDate }) => {
       const result = await getRecurringCalendar({
         start_date: rangeStart,
         end_date: rangeEnd,
+        ...(accountId != null ? { account_id: accountId } : {}),
       });
       setData(result);
     } catch (err) {
@@ -111,7 +112,7 @@ const RecurringBillsCalendar = ({ startDate, endDate }) => {
     } finally {
       setLoading(false);
     }
-  }, [rangeStart, rangeEnd]);
+  }, [rangeStart, rangeEnd, accountId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
