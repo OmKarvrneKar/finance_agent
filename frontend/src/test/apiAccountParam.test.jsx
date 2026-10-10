@@ -12,7 +12,7 @@ vi.mock('axios', () => {
 });
 
 import axios from 'axios';
-import { searchTransactions, getTransactionsExport, fetchSubscriptions, getRecurringCalendar } from '../utils/api';
+import { searchTransactions, getTransactionsExport, fetchSubscriptions, getRecurringCalendar, getSavingsRecommendations } from '../utils/api';
 
 const api = axios.create();
 
@@ -155,5 +155,22 @@ describe('account_id on subscriptions and recurring calendar', () => {
     expect(url).toContain('start_date=2026-09-15');
     expect(url).toContain('end_date=2026-10-15');
     expect(url).toContain('account_id=4');
+  });
+});
+
+describe('account_id on savings recommendations', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    api.get.mockResolvedValue({ data: { recommendations: [] } });
+  });
+
+  it('getSavingsRecommendations omits account_id for All Accounts', async () => {
+    await getSavingsRecommendations();
+    expect(lastUrl()).toBe('/savings-recommendations');
+  });
+
+  it('getSavingsRecommendations includes account_id when an account is selected', async () => {
+    await getSavingsRecommendations(7);
+    expect(lastUrl()).toBe('/savings-recommendations?account_id=7');
   });
 });

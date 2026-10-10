@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { getSavingsRecommendations } from '../utils/api';
 import { AlertCircle, TrendingDown, Lightbulb, DollarSign, Target, Info } from 'lucide-react';
 
@@ -20,26 +20,29 @@ const CONFIDENCE_COLORS = {
   low: { bg: '#fee2e2', text: '#991b1b' },
 };
 
-const SavingsRecommendations = () => {
+const SavingsRecommendations = ({ accountId } = {}) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       try {
-        const result = await getSavingsRecommendations();
+        const result = await getSavingsRecommendations(accountId);
+        if (cancelled) return;
         setData(result);
         setError(null);
       } catch (err) {
-        if (err.response?.status === 401) return;
+        if (cancelled || err.response?.status === 401) return;
         setError('Failed to load savings recommendations');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
-  }, []);
+    return () => { cancelled = true; };
+  }, [accountId]);
 
   if (loading) {
     return (

@@ -14,7 +14,7 @@ SPENDING_INCREASE_THRESHOLD = Decimal("0.15")
 
 
 def _get_monthly_data(
-    db: Session, user_id: int, months: int = 6
+    db: Session, user_id: int, months: int = 6, account_id: Optional[int] = None
 ) -> Tuple[List[Dict[str, Any]], int]:
     end_date = date.today()
     start_date = date(end_date.year, end_date.month, 1)
@@ -24,12 +24,15 @@ def _get_monthly_data(
         else:
             start_date = date(start_date.year, start_date.month - 1, 1)
 
-    txs = db.query(Transaction).filter(
+    query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.date >= start_date,
         Transaction.date <= end_date,
         Transaction.transaction_type == "debit",
-    ).all()
+    )
+    if account_id is not None:
+        query = query.filter(Transaction.account_id == account_id)
+    txs = query.all()
 
     monthly = {}
     for t in txs:
@@ -50,7 +53,7 @@ def _get_monthly_data(
 
 
 def _get_merchant_data(
-    db: Session, user_id: int, months: int = 6
+    db: Session, user_id: int, months: int = 6, account_id: Optional[int] = None
 ) -> List[Dict[str, Any]]:
     end_date = date.today()
     start_date = date(end_date.year, end_date.month, 1)
@@ -60,12 +63,15 @@ def _get_merchant_data(
         else:
             start_date = date(start_date.year, start_date.month - 1, 1)
 
-    txs = db.query(Transaction).filter(
+    query = db.query(Transaction).filter(
         Transaction.user_id == user_id,
         Transaction.date >= start_date,
         Transaction.date <= end_date,
         Transaction.transaction_type == "debit",
-    ).all()
+    )
+    if account_id is not None:
+        query = query.filter(Transaction.account_id == account_id)
+    txs = query.all()
 
     merchants: Dict[str, Dict[str, Any]] = {}
     for t in txs:
@@ -290,10 +296,17 @@ def _recommend_spending_increases(
 
 
 def generate_savings_recommendations(
-    db: Session, user_id: int
+    db: Session, user_id: int, account_id: Optional[int] = None
 ) -> Dict[str, Any]:
-    monthly_data, num_months = _get_monthly_data(db, user_id, months=6)
-    merchant_data = _get_merchant_data(db, user_id, months=6)
+    """Generate savings recommendations.
+
+    When ``account_id`` is given, both the monthly-spending and
+    merchant-level queries are filtered to that account (NULL-account rows
+    excluded), so every transaction-derived input shares the same scope.
+    Algorithms, thresholds and explanation logic are unchanged.
+    """
+    monthly_data, num_months = _get_monthly_data(db, user_id, months=6, account_id=account_id)
+    merchant_data = _get_merchant_data(db, user_id, months=6, account_id=account_id)
 
     recs = []
     recs.extend(_recommend_high_spending_categories(monthly_data, num_months))

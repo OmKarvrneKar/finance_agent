@@ -337,7 +337,7 @@ const Dashboard = () => {
 
       {/* Savings Recommendations */}
       <div style={{ marginBottom: '24px' }}>
-        <SavingsRecommendations />
+        <SavingsRecommendations accountId={selectedAccount !== null ? selectedAccount : undefined} />
       </div>
 
       {/* Merchant Analytics */}

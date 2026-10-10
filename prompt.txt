@@ -1,16 +1,13 @@
-**Phase 5D-3 — Account-Scoped Recurring Bills and Subscriptions**
+**Phase 5D-4 — Account-Scoped Savings Recommendations**
 
-Add optional account filtering to:
-- `GET /recurring/calendar`
-- `GET /subscriptions`
+Add optional account_id filtering to GET /savings-recommendations.
 
 Requirements:
-1. Validate `account_id` using the existing user-scoped account validation pattern. Return 404 for nonexistent or foreign accounts.
-2. When an account is selected, filter every relevant recurring-transaction query by that account, including historical queries used to derive recurring bills or subscriptions. Exclude NULL-account transactions.
-3. When omitted, preserve existing all-account behavior exactly.
-4. Pass the selected Dashboard account into the recurring-bills calendar and refresh it when the account changes.
-5. Add an account selector to the Subscriptions page using the existing active-account pattern; preserve current sorting, pagination, and other behavior.
-6. Add backend and frontend regression tests for account isolation, NULL-account exclusion, unfiltered behavior, invalid/foreign accounts, and switching accounts.
-7. Do not change recurring detection algorithms or implement a recurring transaction scheduler.
+1. Validate account_id using the existing user-scoped account validation pattern; foreign/nonexistent accounts return 404.
+2. Apply the account filter to both monthly spending and merchant-level queries used to generate recommendations. Ensure all transaction-derived inputs use the same account scope.
+3. When account_id is omitted, preserve existing all-account behavior and recommendation output.
+4. Pass the selected Dashboard account into the savings-recommendations component and refetch when the selection changes.
+5. Add backend and frontend regression tests for account A, account B, NULL-account exclusion, unfiltered behavior, invalid/foreign accounts, and switching between accounts.
+6. Do not change recommendation algorithms, thresholds, or explanation logic.
 
-Run full backend/frontend tests and production build. Report exact totals and changed files. Stop after this phase.
+Run the full backend/frontend test suites and production build. Report exact totals and changed files. Stop after this phase.

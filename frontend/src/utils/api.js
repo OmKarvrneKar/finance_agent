@@ -320,8 +320,11 @@ export const unmarkRecurring = async (transactionId) => {
 };
 
 // Savings Recommendations
-export const getSavingsRecommendations = async () => {
-  const response = await api.get('/savings-recommendations');
+export const getSavingsRecommendations = async (account_id) => {
+  const params = new URLSearchParams();
+  if (account_id) params.append('account_id', account_id);
+  const qs = params.toString();
+  const response = await api.get(`/savings-recommendations${qs ? '?' + qs : ''}`);
   return response.data;
 };
 
