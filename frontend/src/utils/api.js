@@ -63,10 +63,10 @@ export const getTransactions = async (page = 1, limit = 10, category = '', type 
 
 export const searchTransactions = async ({ page = 1, limit = 10, q = '', category = '', date_from = '', date_to = '', amount_min = '', amount_max = '', transaction_type = '', account_id = '' } = {}) => {
   const params = new URLSearchParams({ page, limit });
-  if (q) params.append('q', q);
+  if (q) params.append('search', q);
   if (category) params.append('category', category);
-  if (date_from) params.append('date_from', date_from);
-  if (date_to) params.append('date_to', date_to);
+  if (date_from) params.append('start_date', date_from);
+  if (date_to) params.append('end_date', date_to);
   if (amount_min) params.append('amount_min', amount_min);
   if (amount_max) params.append('amount_max', amount_max);
   if (transaction_type) params.append('transaction_type', transaction_type);

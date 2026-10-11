@@ -1,60 +1,12 @@
-Start Phase 5C — Transactions Page Account Scoping.
+**Phase 5C.1 — Fix Transactions Search and Date Filters**
 
-FIRST STEP ONLY: backend + frontend for Transactions.
+Fix the existing frontend/backend query-parameter mismatch for the Transactions list.
 
-Goal:
-Allow the Transactions page to optionally filter by account.
+- Inspect `api.js` and the backend `GET /api/transactions` route.
+- Ensure frontend search and date-range parameters match the backend's declared parameters.
+- Preserve account filtering, category filtering, amount filtering, sorting, pagination, and export behavior.
+- Do not change filtering semantics or unrelated endpoints.
+- Add regression tests proving search and date-range filters actually affect backend results, including when combined with `account_id`.
+- Test the frontend URL construction and verify no regressions.
 
-Backend:
-- Inspect existing GET /api/transactions.
-- Add optional account_id if not already supported.
-- account_id omitted → existing behavior unchanged.
-- account_id provided → only that user's transactions for that account.
-- foreign/nonexistent account → 404.
-- NULL-account transactions excluded when a specific account is selected.
-- Preserve pagination, search, category filters, date filters, sorting, and export behavior.
-- Do NOT change transaction creation/edit/delete.
-- Do NOT change CSV/OCR ingestion.
-- Reuse existing account validation/query helpers.
-
-Frontend:
-- Add/use the existing account selector on Transactions page.
-- All Accounts → omit account_id.
-- Specific account → pass account_id.
-- Changing account refreshes transaction list.
-- Keep existing search/filter/pagination behavior.
-- Clearly show selected account.
-
-Tests:
-- existing behavior without account_id
-- account filtering
-- foreign account
-- nonexistent account
-- NULL-account exclusion
-- search + account filter
-- category + account filter
-- date + account filter
-- pagination + account filter
-- export + account filter if export supports filters
-- account switching
-- All Accounts
-- loading/error/empty states
-
-IMPORTANT:
-- Do NOT calculate financial values in React.
-- Do NOT change transaction data.
-- Do NOT add new transaction models.
-- Do NOT modify analytics formulas.
-- Do NOT modify notifications.
-- Reuse existing account/security helpers.
-
-Run full backend + frontend tests and npm build.
-
-STOP and report:
-1. endpoints changed
-2. account filtering behavior
-3. filter combinations tested
-4. frontend integration
-5. tests added
-6. backend/frontend/total tests
-7. limitations
+Run the full backend and frontend test suites and production build. Report exact totals and changed files.

@@ -56,3 +56,68 @@ describe('account_id query parameter construction', () => {
     expect(url).toContain('search=coffee');
   });
 });
+
+describe('search and date-range query parameter construction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    api.get.mockResolvedValue({ data: { transactions: [], total: 0 } });
+  });
+
+  it('searchTransactions sends backend search param instead of q', async () => {
+    await searchTransactions({ q: 'coffee' });
+    const url = lastUrl();
+    expect(url).toContain('search=coffee');
+    expect(url).not.toMatch(/[?&]q=/);
+  });
+
+  it('searchTransactions sends start_date/end_date instead of date_from/date_to', async () => {
+    await searchTransactions({ date_from: '2026-07-01', date_to: '2026-07-31' });
+    const url = lastUrl();
+    expect(url).toContain('start_date=2026-07-01');
+    expect(url).toContain('end_date=2026-07-31');
+    expect(url).not.toContain('date_from');
+    expect(url).not.toContain('date_to');
+  });
+
+  it('searchTransactions combines search, dates, account, and category with backend param names', async () => {
+    await searchTransactions({
+      q: 'coffee',
+      date_from: '2026-07-01',
+      date_to: '2026-07-31',
+      account_id: '5',
+      category: 'Groceries',
+    });
+    const url = lastUrl();
+    expect(url).toContain('search=coffee');
+    expect(url).toContain('start_date=2026-07-01');
+    expect(url).toContain('end_date=2026-07-31');
+    expect(url).toContain('account_id=5');
+    expect(url).toContain('category=Groceries');
+    expect(url).not.toMatch(/[?&]q=/);
+    expect(url).not.toContain('date_from');
+    expect(url).not.toContain('date_to');
+  });
+
+  it('searchTransactions omits search and date params when empty', async () => {
+    await searchTransactions({});
+    const url = lastUrl();
+    expect(url).not.toContain('search=');
+    expect(url).not.toContain('start_date');
+    expect(url).not.toContain('end_date');
+    expect(url).toContain('page=1');
+    expect(url).toContain('limit=10');
+  });
+
+  it('getTransactionsExport keeps start_date/end_date/search param names', async () => {
+    api.get.mockResolvedValue({ data: new Blob(), headers: {} });
+    await getTransactionsExport({
+      start_date: '2026-07-01',
+      end_date: '2026-07-31',
+      search: 'coffee',
+    });
+    const url = lastUrl();
+    expect(url).toContain('start_date=2026-07-01');
+    expect(url).toContain('end_date=2026-07-31');
+    expect(url).toContain('search=coffee');
+  });
+});
