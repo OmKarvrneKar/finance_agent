@@ -322,4 +322,52 @@ describe('Dashboard account selector and summary', () => {
       expect(screen.getByTestId('anomaly-alerts')).not.toHaveAttribute('data-account-id');
     });
   });
+
+  it('renders spending trend from the account-scoped analytics response', async () => {
+    getAnalyticsSummary.mockImplementation(({ account_id } = {}) =>
+      Promise.resolve(
+        account_id
+          ? { ...mockAnalytics, spending_trend: [{ month: '2026-09', amount: 300 }] }
+          : mockAnalytics
+      )
+    );
+    renderWithAuth(<Dashboard />);
+    await waitForSelector();
+    // Unscoped response has a 2-month trend -> trend card visible
+    await waitFor(() => expect(screen.getByText('Spending Trend')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('account-option-1'));
+    // Scoped response has a single-month trend -> trend card hidden (trendData.length > 1 gate)
+    await waitFor(() => {
+      expect(screen.queryByText('Spending Trend')).not.toBeInTheDocument();
+    });
+    const last = getAnalyticsSummary.mock.calls[getAnalyticsSummary.mock.calls.length - 1][0];
+    expect(last.account_id).toBe(1);
+  });
+
+  it('keeps the trend visible when the scoped response still has multiple months', async () => {
+    getAnalyticsSummary.mockImplementation(({ account_id } = {}) =>
+      Promise.resolve(
+        account_id
+          ? {
+              ...mockAnalytics,
+              spending_trend: [
+                { month: '2026-07', amount: 111 },
+                { month: '2026-08', amount: 222 },
+              ],
+            }
+          : mockAnalytics
+      )
+    );
+    renderWithAuth(<Dashboard />);
+    await waitForSelector();
+    await waitFor(() => expect(screen.getByText('Spending Trend')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('account-option-1'));
+    // Still rendered after switching to the account-scoped 2-month response
+    await waitFor(() => {
+      const last = getAnalyticsSummary.mock.calls[getAnalyticsSummary.mock.calls.length - 1][0];
+      expect(last.account_id).toBe(1);
+    });
+    expect(screen.getByText('Spending Trend')).toBeInTheDocument();
+    expect(screen.getByText('Monthly spending over the selected period.')).toBeInTheDocument();
+  });
 });

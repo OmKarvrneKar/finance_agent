@@ -210,6 +210,8 @@ def get_analytics_summary(
         Transaction.user_id == user_id,
         Transaction.transaction_type == 'debit',
     )
+    if account_id is not None:
+        debit_query = debit_query.filter(Transaction.account_id == account_id)
     if start_date:
         debit_query = debit_query.filter(Transaction.date >= start_date)
     if end_date:

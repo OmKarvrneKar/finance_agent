@@ -1,12 +1,13 @@
-**Phase 5C.1 — Fix Transactions Search and Date Filters**
+**Phase 5D-2 — Resolve Financial Health Budget Scope**
 
-Fix the existing frontend/backend query-parameter mismatch for the Transactions list.
+Audit and fix the mismatch between account-filtered spending and user-level budget caps in financial-health scoring.
 
-- Inspect `api.js` and the backend `GET /api/transactions` route.
-- Ensure frontend search and date-range parameters match the backend's declared parameters.
-- Preserve account filtering, category filtering, amount filtering, sorting, pagination, and export behavior.
-- Do not change filtering semantics or unrelated endpoints.
-- Add regression tests proving search and date-range filters actually affect backend results, including when combined with `account_id`.
-- Test the frontend URL construction and verify no regressions.
+Recommended behavior:
+- Keep income, expenses, and other transaction-derived health metrics account-scoped when account_id is provided.
+- Since budget caps are user-level, calculate budget adherence using user-level spending against those user-level caps, regardless of the selected account.
+- Clearly document this mixed-scope behavior in the endpoint and UI so users understand that budget adherence is a household/user-wide measure, not account-specific.
+- Preserve existing formulas and weights unless tests prove a change is necessary.
+- Add regression tests for both account-selected and unfiltered cases, including exact expected scores and user isolation.
+- Do not add account-linked budgets or modify unrelated features.
 
-Run the full backend and frontend test suites and production build. Report exact totals and changed files.
+Run full backend/frontend tests and the production build. Report exact totals and changed files. Stop after this phase.
