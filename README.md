@@ -68,7 +68,7 @@ npm install
 npm run dev
 ```
 
-The frontend will start on `http://localhost:5173/`..
+The frontend will start on `http://localhost:5173/`.
 
 ## Deployment
 
@@ -82,10 +82,4 @@ The frontend will start on `http://localhost:5173/`..
 2. Set root directory to `frontend`.
 3. Add environment variable `VITE_API_URL` pointing to your deployed backend (e.g., `https://your-render-url.onrender.com/api`).
 
-## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
